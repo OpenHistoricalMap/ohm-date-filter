@@ -1,9 +1,13 @@
 package org.openstreetmap.josm.plugins.ohmdatefilter;
 
+import java.awt.BorderLayout;
 import java.awt.Dimension;
+import java.awt.GridBagConstraints;
+import java.awt.GridBagLayout;
 import static org.openstreetmap.josm.tools.I18n.tr;
 
 import java.awt.GridLayout;
+import java.awt.Insets;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.awt.event.KeyEvent;
@@ -14,6 +18,8 @@ import javax.swing.JButton;
 
 import javax.swing.JLabel;
 import javax.swing.JPanel;
+import javax.swing.event.ChangeEvent;
+import javax.swing.event.ChangeListener;
 import org.openstreetmap.josm.data.osm.search.SearchSetting;
 
 import org.openstreetmap.josm.gui.SideButton;
@@ -24,7 +30,11 @@ public class OHMDateFilterDialog extends ToggleDialog {
 
     private OHMDateFilterCalendar start_dateFilterCalendar;
     private OHMDateFilterCalendar end_dateFilterCalendar;
-    private JLabel dateRangeLabel; // Label to display the selected date range
+    private JLabel dateRangeLabel;
+
+    private JLabel rangeDetailValues = new JLabel();
+
+    private RangeSlider rangeSlider = new RangeSlider();
 
     public OHMDateFilterDialog() {
         super(tr("OpenHistoricalMap Date Filter"),
@@ -33,14 +43,7 @@ public class OHMDateFilterDialog extends ToggleDialog {
                 Shortcut.registerShortcut("ohmDateFilter", tr("Toggle: {0}", tr("OpenHistoricalMap Date Filter")), KeyEvent.VK_I,
                         Shortcut.ALT_CTRL_SHIFT), 90);
 
-        JPanel main_panel = new JPanel(new GridLayout(2, 1));
-
-        // Add calendar textfile and picker
-        main_panel.add(datesPickeraPanel());
-
-        JPanel details_panel = new JPanel(new GridLayout(2, 1));
-        dateRangeLabel = new JLabel("Date Range: Not set"); // Initial text
-        details_panel.add(dateRangeLabel);
+        JPanel main_panel = new JPanel(new GridLayout(3, 1));
 
         JButton updateButton = new JButton("Filter data");
         updateButton.addActionListener(new ActionListener() {
@@ -50,41 +53,60 @@ public class OHMDateFilterDialog extends ToggleDialog {
             }
         });
 
-        details_panel.add(updateButton);
-
-        main_panel.add(details_panel);
-
-//        // Listen for changes in both date pickers
-//        // Listen for changes in both date pickers
-//        start_dateFilterCalendar.addDateChangeListener(e -> updateDateRange());
-//        end_dateFilterCalendar.addDateChangeListener(e -> updateDateRange());
+        main_panel.add(createRangeSliderPanel());
+        main_panel.add(rangeDetailValues);
+        main_panel.add(updateButton);
         createLayout(main_panel, false, Arrays.asList(new SideButton[]{}));
     }
 
-    private JPanel datesPickeraPanel() {
+    private JPanel createRangeSliderPanel() {
+        JPanel panel = new JPanel(new GridBagLayout());
+        rangeSlider.setPreferredSize(new Dimension(300, 50));
+        panel.setBorder(javax.swing.BorderFactory.createTitledBorder("Date range"));
 
-        JPanel calendars_panel = new JPanel(new GridLayout(1, 2));
-        calendars_panel.setBorder(javax.swing.BorderFactory.createEtchedBorder());
+        rangeSlider.setMinimum(1960 - 100);
+        rangeSlider.setMaximum(2000 + 100);
+        rangeSlider.setUpperValue(2000);
+        rangeSlider.setValue(1960);
 
-//        Dimension fixedHeight = new Dimension(0, 80);
-//        calendars_panel.setPreferredSize(fixedHeight);
-//        calendars_panel.setMinimumSize(fixedHeight);
-//        calendars_panel.setMaximumSize(new Dimension(Integer.MAX_VALUE, 80));
+        // Add listener to update display.
+        rangeSlider.addChangeListener(new ChangeListener() {
+            public void stateChanged(ChangeEvent e) {
+                RangeSlider slider = (RangeSlider) e.getSource();
+                filterData(slider.getValue(), slider.getUpperValue());
+            }
+        });
 
-        start_dateFilterCalendar = new OHMDateFilterCalendar(new Date(), "Start Date");
-        end_dateFilterCalendar = new OHMDateFilterCalendar(new Date(), "End Date");
+        panel.add(rangeSlider, new GridBagConstraints(0, 2, 2, 1, 1.0, 0.0, // Adjusted weightx to 1.0
+                GridBagConstraints.NORTHWEST, GridBagConstraints.HORIZONTAL, // Changed fill to HORIZONTAL
+                new Insets(0, 0, 0, 0), 0, 0));
 
-        calendars_panel.add(start_dateFilterCalendar);
-        calendars_panel.add(end_dateFilterCalendar);
+        return panel;
+    }
 
-        return calendars_panel;
+    private void filterData(int start_date_num, int end_date_num) {
+        System.err.println(start_date_num);
+        System.err.println(end_date_num);
+        String filter_values = "start_date>" + start_date_num + " AND end_date<" + end_date_num;
+        System.out.println(filter_values);
+        rangeDetailValues.setText(filter_values);
+
+        SearchSetting searchSetting = new SearchSetting();
+        searchSetting.text = filter_values;
+
+        searchSetting.caseSensitive = false;
+        searchSetting.regexSearch = false;
+        searchSetting.mapCSSSearch = false;
+        searchSetting.allElements = true;
+
+        OHMDateFilterFunctions.applyDateFilter(searchSetting);
+
     }
 
     private void updateDateRange() {
         Date startDate = start_dateFilterCalendar.getSelectedDate();
         Date endDate = end_dateFilterCalendar.getSelectedDate();
-        
-        
+
         SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd");
         String formattedStartDate = dateFormat.format(startDate);
         String formattedEndDate = dateFormat.format(endDate);
