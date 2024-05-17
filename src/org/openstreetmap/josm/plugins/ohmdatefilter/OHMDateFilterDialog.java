@@ -10,6 +10,8 @@ import java.awt.GridLayout;
 import java.awt.Insets;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
+import java.awt.event.FocusAdapter;
+import java.awt.event.FocusEvent;
 import java.awt.event.KeyEvent;
 import java.text.SimpleDateFormat;
 import java.util.Arrays;
@@ -31,13 +33,8 @@ import org.openstreetmap.josm.tools.Shortcut;
 
 public class OHMDateFilterDialog extends ToggleDialog {
 
-    private OHMDateFilterCalendar start_dateFilterCalendar;
-//    private OHMDateFilterCalendar end_dateFilterCalendar;
-//    private JLabel dateRangeLabel;
-
-    private OHMDateFilterCalendar dateFilterCalendar = new OHMDateFilterCalendar(new Date(),"Set an estimated date to filter");
-
-//    private JTextField jTextFieldDate = new JTextField();
+    private OHMDateFilterCalendar dateFilterCalendar = new OHMDateFilterCalendar(new Date(), "Set an estimated date to filter");
+    private JTextField jTextFieldYear = new JTextField();
     private JLabel rangeDetailValues = new JLabel();
     private RangeSlider rangeSlider = new RangeSlider();
 
@@ -59,9 +56,31 @@ public class OHMDateFilterDialog extends ToggleDialog {
             }
         });
 
-        main_panel.add(dateFilterCalendar);
+        //###################### Event for jTextFieldYear
+        setMinMaxYear("1950");
+        jTextFieldYear.addActionListener(new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                setMinMaxYear(jTextFieldYear.getText());
+            }
+        });
+
+        // Agregar FocusListener para detectar cuando se pierde el foco
+        jTextFieldYear.addFocusListener(new FocusAdapter() {
+            @Override
+            public void focusLost(FocusEvent e) {
+                setMinMaxYear(jTextFieldYear.getText());
+
+            }
+        });
+
+        main_panel.add(jTextFieldYear);
+
+//        main_panel.add(dateFilterCalendar);
+//        dateFilterCalendar.addDateChangeListener(e -> setMinMaxYear());
         main_panel.add(createRangeSliderPanel());
         main_panel.add(rangeDetailValues);
+
         main_panel.add(updateButton);
         createLayout(main_panel, false, Arrays.asList(new SideButton[]{}));
     }
@@ -73,16 +92,30 @@ public class OHMDateFilterDialog extends ToggleDialog {
 //        return panel;
 //    }
 
+    private void setMinMaxYear(String year) {
+        try {
+            
+            int yearNum = Integer.parseInt(year);
+            
+            rangeSlider.setMinimum(yearNum - 100);
+            rangeSlider.setMaximum(yearNum + 100);
+            rangeSlider.setValue(yearNum - 25);
+            rangeSlider.setUpperValue(yearNum + 25);
+            
+        } catch (NumberFormatException e) {
+            System.out.println("Invalid year format: " + year);
+        }
+    }
+
     private JPanel createRangeSliderPanel() {
         JPanel panel = new JPanel(new GridBagLayout());
         rangeSlider.setPreferredSize(new Dimension(300, 100));
         panel.setBorder(javax.swing.BorderFactory.createTitledBorder("Date range"));
 
-        rangeSlider.setMinimum(1960 - 100);
-        rangeSlider.setMaximum(2000 + 100);
-        rangeSlider.setUpperValue(2000);
-        rangeSlider.setValue(1960);
-
+//        rangeSlider.setMinimum(1960 - 100);
+//        rangeSlider.setMaximum(2000 + 100);
+//        rangeSlider.setUpperValue(2000);
+//        rangeSlider.setValue(1960);
         // Add listener to update display.
         rangeSlider.addChangeListener(new ChangeListener() {
             public void stateChanged(ChangeEvent e) {
