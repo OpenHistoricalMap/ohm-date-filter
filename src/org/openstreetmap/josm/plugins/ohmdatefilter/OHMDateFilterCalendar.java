@@ -32,6 +32,7 @@ public class OHMDateFilterCalendar extends JPanel {
 
         // TextField to display the date
         dateField = new JTextField();
+        dateField.setColumns(20); // Set a preferred column size if needed
         SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd");
 
         triggerButton = new JButton("...");
@@ -51,7 +52,7 @@ public class OHMDateFilterCalendar extends JPanel {
         });
 
         // JPanel
-        JPanel textFieldPanel = new JPanel();
+        JPanel textFieldPanel = new JPanel(new BorderLayout());
         textFieldPanel.setBorder(javax.swing.BorderFactory.createTitledBorder(titleStringJp));
         textFieldPanel.setToolTipText(titleStringJp);
         textFieldPanel.add(dateField, BorderLayout.CENTER);

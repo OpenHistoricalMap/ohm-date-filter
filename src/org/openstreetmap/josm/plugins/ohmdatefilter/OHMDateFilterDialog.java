@@ -18,8 +18,11 @@ import javax.swing.JButton;
 
 import javax.swing.JLabel;
 import javax.swing.JPanel;
+import javax.swing.JTextField;
 import javax.swing.event.ChangeEvent;
 import javax.swing.event.ChangeListener;
+import org.jdesktop.swingx.JXSearchField;
+import org.jdesktop.swingx.JXTextField;
 import org.openstreetmap.josm.data.osm.search.SearchSetting;
 
 import org.openstreetmap.josm.gui.SideButton;
@@ -29,11 +32,13 @@ import org.openstreetmap.josm.tools.Shortcut;
 public class OHMDateFilterDialog extends ToggleDialog {
 
     private OHMDateFilterCalendar start_dateFilterCalendar;
-    private OHMDateFilterCalendar end_dateFilterCalendar;
-    private JLabel dateRangeLabel;
+//    private OHMDateFilterCalendar end_dateFilterCalendar;
+//    private JLabel dateRangeLabel;
 
+    private OHMDateFilterCalendar dateFilterCalendar = new OHMDateFilterCalendar(new Date(),"Set an estimated date to filter");
+
+//    private JTextField jTextFieldDate = new JTextField();
     private JLabel rangeDetailValues = new JLabel();
-
     private RangeSlider rangeSlider = new RangeSlider();
 
     public OHMDateFilterDialog() {
@@ -43,25 +48,34 @@ public class OHMDateFilterDialog extends ToggleDialog {
                 Shortcut.registerShortcut("ohmDateFilter", tr("Toggle: {0}", tr("OpenHistoricalMap Date Filter")), KeyEvent.VK_I,
                         Shortcut.ALT_CTRL_SHIFT), 90);
 
-        JPanel main_panel = new JPanel(new GridLayout(3, 1));
+        JPanel main_panel = new JPanel(new GridLayout(4, 1));
 
-        JButton updateButton = new JButton("Filter data");
+        JButton updateButton = new JButton("Save Filter");
         updateButton.addActionListener(new ActionListener() {
             @Override
             public void actionPerformed(ActionEvent e) {
-                updateDateRange();
+                System.out.println("save filter");
+
             }
         });
 
+        main_panel.add(dateFilterCalendar);
         main_panel.add(createRangeSliderPanel());
         main_panel.add(rangeDetailValues);
         main_panel.add(updateButton);
         createLayout(main_panel, false, Arrays.asList(new SideButton[]{}));
     }
+//
+//    private JPanel createImputValuesPanel() {
+//        JPanel panel = new JPanel(new GridLayout(1, 2));
+//        panel.add(new JLabel("Set stimate date to filter"));
+//        panel.add(dateFilterCalendar);
+//        return panel;
+//    }
 
     private JPanel createRangeSliderPanel() {
         JPanel panel = new JPanel(new GridBagLayout());
-        rangeSlider.setPreferredSize(new Dimension(300, 50));
+        rangeSlider.setPreferredSize(new Dimension(300, 100));
         panel.setBorder(javax.swing.BorderFactory.createTitledBorder("Date range"));
 
         rangeSlider.setMinimum(1960 - 100);
@@ -90,52 +104,12 @@ public class OHMDateFilterDialog extends ToggleDialog {
         String filter_values = "start_date>" + start_date_num + " AND end_date<" + end_date_num;
         System.out.println(filter_values);
         rangeDetailValues.setText(filter_values);
-
         SearchSetting searchSetting = new SearchSetting();
         searchSetting.text = filter_values;
-
         searchSetting.caseSensitive = false;
         searchSetting.regexSearch = false;
         searchSetting.mapCSSSearch = false;
         searchSetting.allElements = true;
-
         OHMDateFilterFunctions.applyDateFilter(searchSetting);
-
     }
-
-    private void updateDateRange() {
-        Date startDate = start_dateFilterCalendar.getSelectedDate();
-        Date endDate = end_dateFilterCalendar.getSelectedDate();
-
-        SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd");
-        String formattedStartDate = dateFormat.format(startDate);
-        String formattedEndDate = dateFormat.format(endDate);
-
-        if (OHMDateFilterFunctionsDates.validateDateRange(startDate, endDate)) {
-
-            System.out.println("Valid");
-
-            String difference = OHMDateFilterFunctionsDates.calculateDateDifference(startDate, endDate);
-            System.out.println("Date Range is valid.");
-            System.out.println("Difference: " + difference);
-            dateRangeLabel.setText("Date Range: " + difference);
-
-            SearchSetting searchSetting = new SearchSetting();
-            searchSetting.text = "start_date>" + formattedStartDate + " AND end_date<" + formattedEndDate;
-//            searchSetting.text = "start_date>1960-01-01 AND end_date<2000-01-01";
-
-            System.out.println(searchSetting.text);
-
-            searchSetting.caseSensitive = false;
-            searchSetting.regexSearch = false;
-            searchSetting.mapCSSSearch = false;
-            searchSetting.allElements = true;
-
-            OHMDateFilterFunctions.applyDateFilter(searchSetting);
-
-        } else {
-            System.out.println("Date Range is invalid. Start date must not be later than end date.");
-        }
-    }
-
 }
