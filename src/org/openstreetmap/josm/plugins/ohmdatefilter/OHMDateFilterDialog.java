@@ -102,55 +102,23 @@ public class OHMDateFilterDialog extends ToggleDialog {
             dateRangeLabel.setText("Date Range: " + difference);
 
             SearchSetting searchSetting = new SearchSetting();
-//            settings.text = "start_date>" + formattedStartDate + " AND end_date<" + formattedEndDate;
-            searchSetting.text = "start_date>1960-01-01 AND end_date<2000-01-01";
+            searchSetting.text = "start_date>" + formattedStartDate + " AND end_date<" + formattedEndDate;
+//            searchSetting.text = "start_date>1960-01-01 AND end_date<2000-01-01";
 
             System.out.println(searchSetting.text);
 
             searchSetting.caseSensitive = false;
             searchSetting.regexSearch = false;
             searchSetting.mapCSSSearch = false;
+            searchSetting.allElements = true;
 
-            DataSet currentDataSet = getCurrentDataSet();
-
-            if (currentDataSet == null) {
-                Logging.warn("No active dataset available for filtering.");
-                return;
-            }
-
-            try {
-                // Compile the search query from the settings
-                SearchCompiler.Match matcher = SearchCompiler.compile(searchSetting);
-
-                // Filter all primitives in the current dataset
-                Set<OsmPrimitive> allPrimitives = currentDataSet.allPrimitives().stream().collect(Collectors.toSet());
-                Set<OsmPrimitive> filteredPrimitives = allPrimitives.stream()
-                        .filter(matcher::match)
-                        .collect(Collectors.toSet());
-
-                // Select the filtered primitives in the dataset
-                currentDataSet.setSelected(filteredPrimitives);
-
-                FilterModel filterModel = new FilterModel();
-                Filter filter = new Filter();
-                filter.text = searchSetting.text;
-                filter.caseSensitive = searchSetting.caseSensitive;
-                filter.regexSearch = searchSetting.regexSearch;
-                filter.mapCSSSearch = searchSetting.mapCSSSearch;
-                filterModel.addFilter(filter);
-                filterModel.executeFilters();
-
-            } catch (Exception e) {
-                Logging.error("Error applying date filter: " + e.getMessage());
-            }
-
+         
+            OHMDateFilterFunctions.applyDateFilter(searchSetting);
+          
         } else {
             System.out.println("Date Range is invalid. Start date must not be later than end date.");
         }
     }
 
-    private static DataSet getCurrentDataSet() {
-        // Use MainApplication to get the current active dataset
-        return MainApplication.getLayerManager().getEditDataSet();
-    }
+  
 }
