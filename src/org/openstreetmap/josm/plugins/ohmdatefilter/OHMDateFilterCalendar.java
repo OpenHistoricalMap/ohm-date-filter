@@ -3,9 +3,7 @@ package org.openstreetmap.josm.plugins.ohmdatefilter;
 import com.toedter.calendar.JCalendar;
 import javax.swing.*;
 import java.awt.*;
-import java.awt.event.*;
 import java.beans.PropertyChangeListener;
-import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.Date;
 
@@ -15,16 +13,18 @@ public class OHMDateFilterCalendar extends JPanel {
     private JTextField dateField;
     private JFrame calendarFrame;
     private JButton triggerButton;
+    private String titleStringJp;
 
-    // Existing default constructor
+    // Default constructor
     public OHMDateFilterCalendar() {
-        initializeComponents();
+        this(new Date(), "Default Title");
     }
 
-    // Overloaded constructor to set a default date
-    public OHMDateFilterCalendar(Date defaultDate) {
-        initializeComponents(); // Initialize components
-        setDate(defaultDate); // Set the default date
+    // Constructor with default date and title
+    public OHMDateFilterCalendar(Date defaultDate, String title) {
+        this.titleStringJp = title;
+        initializeComponents();
+        setDate(defaultDate);
     }
 
     private void initializeComponents() {
@@ -32,10 +32,8 @@ public class OHMDateFilterCalendar extends JPanel {
 
         // TextField to display the date
         dateField = new JTextField();
-        dateField.setEditable(false);
         SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd");
 
-        // Create a button with "..." to trigger the calendar
         triggerButton = new JButton("...");
         triggerButton.setMargin(new Insets(0, 0, 0, 0));
         triggerButton.setFocusable(false);
@@ -52,9 +50,12 @@ public class OHMDateFilterCalendar extends JPanel {
             }
         });
 
-        // Add the trigger button to the east side of the text field
-        dateField.setLayout(new BorderLayout());
-        dateField.add(triggerButton, BorderLayout.EAST);
+        // JPanel
+        JPanel textFieldPanel = new JPanel();
+        textFieldPanel.setBorder(javax.swing.BorderFactory.createTitledBorder(titleStringJp));
+        textFieldPanel.setToolTipText(titleStringJp);
+        textFieldPanel.add(dateField, BorderLayout.CENTER);
+        textFieldPanel.add(triggerButton, BorderLayout.EAST);
 
         // JCalendar setup
         calendar = new JCalendar();
@@ -82,7 +83,7 @@ public class OHMDateFilterCalendar extends JPanel {
         calendarFrame.setVisible(false);
 
         // Adding components to this panel
-        add(dateField, BorderLayout.CENTER);
+        add(textFieldPanel, BorderLayout.CENTER);
     }
 
     public void addDateChangeListener(PropertyChangeListener listener) {
@@ -92,7 +93,7 @@ public class OHMDateFilterCalendar extends JPanel {
     public void setDate(Date date) {
         calendar.setDate(date);
         SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd");
-        dateField.setText(dateFormat.format(date)); // Update the text field when setting the date
+        dateField.setText(dateFormat.format(date));
     }
 
     private void positionCalendarFrame() {
@@ -107,6 +108,6 @@ public class OHMDateFilterCalendar extends JPanel {
     }
 
     public Date getSelectedDate() {
-        return calendar.getDate(); // Directly return the date from the calendar
+        return calendar.getDate();
     }
 }
