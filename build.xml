@@ -7,10 +7,14 @@
     <property name="plugin.class" value="org.openstreetmap.josm.plugins.ohmdatefilter.OHMDateFilterPlugin"/>
     <property name="plugin.description" value="Filter OpenHistoricalMap objects by a range of dates"/>
     <property name="plugin.icon" value="images/iconohmdatefilter.png"/>
-    <property name="plugin.link" value="https://github.com/Rub21/osm-obj-info"/>
+    <property name="plugin.link" value="https://github.com/OpenHistoricalMap/ohm-date-filter"/>
     <!--<property name="plugin.early" value="..."/>-->
     <!--<property name="plugin.requires" value="..."/>-->
     <!--<property name="plugin.stage" value="..."/>-->
     <property name="plugin.canloadatruntime" value="true"/>
+    <!-- Path to include SwingX and other JAR libraries -->
+    <path id="classpath">
+        <fileset dir="lib" includes="*.jar"/>
+    </path>
     <import file="../build-common.xml"/>
 </project>
