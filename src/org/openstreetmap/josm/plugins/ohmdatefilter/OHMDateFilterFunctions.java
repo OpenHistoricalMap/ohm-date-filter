@@ -3,7 +3,6 @@ package org.openstreetmap.josm.plugins.ohmdatefilter;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.Date;
-import java.util.List;
 import org.openstreetmap.josm.data.osm.DataSet;
 import org.openstreetmap.josm.data.osm.search.SearchCompiler;
 
@@ -13,6 +12,8 @@ import org.openstreetmap.josm.tools.Logging;
 import org.openstreetmap.josm.data.osm.Filter;
 import org.openstreetmap.josm.data.osm.FilterModel;
 import org.openstreetmap.josm.data.osm.Way;
+import org.openstreetmap.josm.gui.dialogs.FilterDialog;
+import org.openstreetmap.josm.gui.dialogs.FilterTableModel;
 
 public class OHMDateFilterFunctions {
 
@@ -21,19 +22,18 @@ public class OHMDateFilterFunctions {
      *
      * @param searchSetting The search settings including the date range.
      */
-    public static void applyDateFilter(SearchSetting searchSetting) {
+    public static void applyDateFilter(SearchSetting searchSetting, boolean saveFilter) {
 
         DataSet currentDataSet = getCurrentDataSet();
-
         if (currentDataSet == null) {
             Logging.warn("No active dataset available for filtering.");
             return;
         }
 
         try {
+            // Validate searchSetting
             SearchCompiler.compile(searchSetting);
-
-            FilterModel filterModel = new FilterModel();
+            // Create filter
             Filter filter = new Filter();
             filter.text = searchSetting.text;
             filter.caseSensitive = searchSetting.caseSensitive;
@@ -41,8 +41,23 @@ public class OHMDateFilterFunctions {
             filter.mapCSSSearch = searchSetting.mapCSSSearch;
             filter.allElements = searchSetting.allElements;
             filter.inverted = true;
-            filterModel.addFilter(filter);
-            filterModel.executeFilters();
+
+            if (saveFilter) {
+                // Save filter in filer window
+                // Get filterDialog and apply filter
+                FilterDialog filterDialog = MainApplication.getMap().filterDialog;
+                FilterTableModel filterModel = filterDialog.getFilterModel();
+                filterModel.addFilter(filter);
+                filterModel.executeFilters();
+                // Update Filters
+                filterDialog.setVisible(true);
+                filterDialog.unfurlDialog();
+            } else {
+                // Just apply filter in the map
+                FilterModel filterModel = new FilterModel();
+                filterModel.addFilter(filter);
+                filterModel.executeFilters();
+            }
 
         } catch (Exception e) {
             Logging.error("Error applying date filter: " + e.getMessage());

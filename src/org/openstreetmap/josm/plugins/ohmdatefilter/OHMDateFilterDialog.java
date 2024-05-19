@@ -31,7 +31,7 @@ public class OHMDateFilterDialog extends ToggleDialog {
 
     private OHMDateFilterCalendar dateFilterCalendar = new OHMDateFilterCalendar(new Date(), "Set an estimated date to filter");
     private JTextField jTextFieldYear = new JTextField();
-    private JLabel rangeDetailValues = new JLabel();
+    private JLabel jLabelSettings = new JLabel();
     private RangeSlider rangeSlider = new RangeSlider();
 
     public OHMDateFilterDialog() {
@@ -41,84 +41,101 @@ public class OHMDateFilterDialog extends ToggleDialog {
                 Shortcut.registerShortcut("ohmDateFilter", tr("Toggle: {0}", tr("OpenHistoricalMap Date Filter")), KeyEvent.VK_I,
                         Shortcut.ALT_CTRL_SHIFT), 90);
 
-        JPanel main_panel = new JPanel(new GridLayout(4, 1));
-
-        JButton updateButton = new JButton("Save Filter");
-        updateButton.addActionListener(new ActionListener() {
+        //Main panel
+        JPanel mainPanel = new JPanel(new GridLayout(4, 1));
+        JButton jButtonSaveFilter = new JButton("Save Filter");
+        jButtonSaveFilter.addActionListener(new ActionListener() {
             @Override
             public void actionPerformed(ActionEvent e) {
-                System.out.println("save filter");
+//                
+              String searchFormat = jLabelSettings.getText();
+              System.err.println("Search format: " + searchFormat);
+              SearchSetting searchSetting =getSearchSetting(searchFormat);
+              // Apply filter
+              OHMDateFilterFunctions.applyDateFilter(searchSetting, true);
+            }
+        });
+        //Add panels 
+        mainPanel.add(imputDatePanel());
+        mainPanel.add(rangeSliderPanel());
+        mainPanel.add(jLabelSettings);
+        mainPanel.add(jButtonSaveFilter);
+        createLayout(mainPanel, false, Arrays.asList(new SideButton[]{}));
+    }
 
+    private JPanel imputDatePanel() {
+        // Imput panel to add initial date
+        JPanel panel = new JPanel(new GridLayout(1, 2));
+        panel.setBorder(javax.swing.BorderFactory.createTitledBorder("Date range"));
+        panel.add(jTextFieldYear);
+        JButton jButtonSetYear = new JButton("Set date");
+        panel.add(jButtonSetYear);
+
+        // Add ActionListener to the button
+        jButtonSetYear.addActionListener(new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                String input = jTextFieldYear.getText();
+                if (input != null && !input.isEmpty()) {
+                    setMinMaxYearForSlider(input);
+                }
+            }
+        });
+        return panel;
+    }
+
+    private JPanel rangeSliderPanel() {
+        // Panel that contains slider range panel 
+        JPanel panel = new JPanel(new GridBagLayout());
+        rangeSlider.setPreferredSize(new Dimension(300, 100));
+        panel.setBorder(javax.swing.BorderFactory.createTitledBorder("Date range"));
+        rangeSlider.addChangeListener(new ChangeListener() {
+            public void stateChanged(ChangeEvent e) {
+
+                RangeSlider slider = (RangeSlider) e.getSource();
+
+                System.err.println("####### Slider values");
+                System.err.println("Start num days: " + slider.getValue());
+                System.err.println("End num days: " + slider.getUpperValue());
+                // Get serach format
+                String searchFormat = getSearchFormat(slider.getValue(), slider.getUpperValue());
+                System.err.println("Search format: " + searchFormat);
+                jLabelSettings.setText(searchFormat);
+                SearchSetting searchSetting =getSearchSetting(searchFormat);
+                // Apply filter
+                OHMDateFilterFunctions.applyDateFilter(searchSetting, false);
             }
         });
 
-//        //###################### Event for jTextFieldYear
-////        setMinMaxYear("1950");
-//        jTextFieldYear.addActionListener(new ActionListener() {
-//            @Override
-//            public void actionPerformed(ActionEvent e) {
-//                setMinMaxYear(jTextFieldYear.getText());
-//            }
-//        });
-//
-//        // Agregar FocusListener para detectar cuando se pierde el foco
-//        jTextFieldYear.addFocusListener(new FocusAdapter() {
-//            @Override
-//            public void focusLost(FocusEvent e) {
-//                setMinMaxYear(jTextFieldYear.getText());
-//
-//            }
-//        });
-        main_panel.add(createImputPanel());
-
-//        main_panel.add(dateFilterCalendar);
-//        dateFilterCalendar.addDateChangeListener(e -> setMinMaxYear());
-        main_panel.add(createRangeSliderPanel());
-        main_panel.add(rangeDetailValues);
-
-        main_panel.add(updateButton);
-        createLayout(main_panel, false, Arrays.asList(new SideButton[]{}));
+        panel.add(rangeSlider, new GridBagConstraints(0, 2, 2, 1, 1.0, 0.0, // Adjusted weightx to 1.0
+                GridBagConstraints.NORTHWEST, GridBagConstraints.HORIZONTAL, // Changed fill to HORIZONTAL
+                new Insets(0, 0, 0, 0), 0, 0));
+        return panel;
     }
-//
-//    private JPanel createImputValuesPanel() {
-//        JPanel panel = new JPanel(new GridLayout(1, 2));
-//        panel.add(new JLabel("Set stimate date to filter"));
-//        panel.add(dateFilterCalendar);
-//        return panel;
-//    }
 
-    private void setMinMaxYear(String datestr) {
-        // ayear value in seconds
-
+    private void setMinMaxYearForSlider(String datestr) {
         try {
-
-            System.err.println("########################  Evaluar");
-
+            // Fix date format
             String fixedDate_str = UtilDates.formatDate(datestr);
-            
-            
-
             System.err.println("fixedDate : " + fixedDate_str);
 
+            // Midle date is the date the user insert
             Date midDate = UtilDates.stringToDate(fixedDate_str);
-
             int days = UtilDates.daysFromYear0(midDate);
             int minimum = days - DAYS_IN_YEAR * 50;
             int maximum = days + DAYS_IN_YEAR * 50;
             int minValue = days - DAYS_IN_YEAR * 20;
             int maxValue = days + DAYS_IN_YEAR * 20;
 
+            // Remove print later
             System.err.println("minimum : " + minimum);
-
             System.err.println("maximum : " + maximum);
-
             System.err.println("minValue : " + minValue);
-
             System.err.println("maxValue : " + maxValue);
 
+            // Update Range for Slider
             rangeSlider.setMinimum(minimum);
             rangeSlider.setMaximum(maximum);
-
             rangeSlider.setValue(minValue);
             rangeSlider.setUpperValue(maxValue);
 
@@ -127,73 +144,20 @@ public class OHMDateFilterDialog extends ToggleDialog {
         }
     }
 
-    private JPanel createImputPanel() {
-        JPanel panel = new JPanel(new GridLayout(1, 2));
-        panel.setBorder(javax.swing.BorderFactory.createTitledBorder("Date range"));
-        panel.add(jTextFieldYear);
-        JButton jButton = new JButton("Set date ");
-        panel.add(jButton);
-        // Add ActionListener to the button
-        jButton.addActionListener(new ActionListener() {
-            @Override
-            public void actionPerformed(ActionEvent e) {
-                String input = jTextFieldYear.getText();
-                if (input != null && !input.isEmpty()) {
-                    setMinMaxYear(input);
-
-                }
-            }
-        });
-        return panel;
-    }
-
-    private JPanel createRangeSliderPanel() {
-        JPanel panel = new JPanel(new GridBagLayout());
-        rangeSlider.setPreferredSize(new Dimension(300, 100));
-        panel.setBorder(javax.swing.BorderFactory.createTitledBorder("Date range"));
-
-//        rangeSlider.setMinimum(1960 - 100);
-//        rangeSlider.setMaximum(2000 + 100);
-//        rangeSlider.setUpperValue(2000);
-//        rangeSlider.setValue(1960);
-        // Add listener to update display.
-        rangeSlider.addChangeListener(new ChangeListener() {
-            public void stateChanged(ChangeEvent e) {
-                RangeSlider slider = (RangeSlider) e.getSource();
-
-//                filterData(rangeSlider.getValue(), rangeSlider.getUpperValue());
-                filterData(slider.getValue(), slider.getUpperValue());
-            }
-        });
-
-        panel.add(rangeSlider, new GridBagConstraints(0, 2, 2, 1, 1.0, 0.0, // Adjusted weightx to 1.0
-                GridBagConstraints.NORTHWEST, GridBagConstraints.HORIZONTAL, // Changed fill to HORIZONTAL
-                new Insets(0, 0, 0, 0), 0, 0));
-
-        return panel;
-    }
-
-    private void filterData(int start_num_days, int end_num_days) {
-        System.err.println("==== rango cuanfo hago slider");
-
-        System.err.println(start_num_days);
-        System.err.println(end_num_days);
-
+    private String getSearchFormat(int start_num_days, int end_num_days) {
         String start_date_str = UtilDates.dateFromDays(start_num_days);
         String end_date_str = UtilDates.dateFromDays(end_num_days);
-
-        System.err.println(start_date_str);
-        System.err.println(end_date_str);
-
         String filter_values = "start_date>" + start_date_str + " AND end_date<" + end_date_str;
-        System.out.println(filter_values);
-        rangeDetailValues.setText(filter_values);
+        return filter_values;
+    }
+
+    private SearchSetting getSearchSetting(String searchFormat) {
         SearchSetting searchSetting = new SearchSetting();
-        searchSetting.text = filter_values;
+        searchSetting.text = searchFormat;
         searchSetting.caseSensitive = false;
         searchSetting.regexSearch = false;
         searchSetting.mapCSSSearch = false;
         searchSetting.allElements = true;
-        OHMDateFilterFunctions.applyDateFilter(searchSetting);
+        return searchSetting;
     }
 }
