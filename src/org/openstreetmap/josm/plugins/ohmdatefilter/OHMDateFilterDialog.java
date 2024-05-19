@@ -31,7 +31,7 @@ public class OHMDateFilterDialog extends ToggleDialog {
 
     private OHMDateFilterCalendar dateFilterCalendar = new OHMDateFilterCalendar(new Date(), "Set an estimated date to filter");
     private JTextField jTextFieldYear = new JTextField();
-    private JLabel jLabelSettings = new JLabel();
+    private JTextField jTextSettings = new JTextField();
     private RangeSlider rangeSlider = new RangeSlider();
 
     public OHMDateFilterDialog() {
@@ -48,7 +48,7 @@ public class OHMDateFilterDialog extends ToggleDialog {
             @Override
             public void actionPerformed(ActionEvent e) {
 //                
-              String searchFormat = jLabelSettings.getText();
+              String searchFormat = jTextSettings.getText();
               System.err.println("Search format: " + searchFormat);
               SearchSetting searchSetting =getSearchSetting(searchFormat);
               // Apply filter
@@ -58,7 +58,7 @@ public class OHMDateFilterDialog extends ToggleDialog {
         //Add panels 
         mainPanel.add(imputDatePanel());
         mainPanel.add(rangeSliderPanel());
-        mainPanel.add(jLabelSettings);
+        mainPanel.add(jTextSettings);
         mainPanel.add(jButtonSaveFilter);
         createLayout(mainPanel, false, Arrays.asList(new SideButton[]{}));
     }
@@ -100,7 +100,7 @@ public class OHMDateFilterDialog extends ToggleDialog {
                 // Get serach format
                 String searchFormat = getSearchFormat(slider.getValue(), slider.getUpperValue());
                 System.err.println("Search format: " + searchFormat);
-                jLabelSettings.setText(searchFormat);
+                jTextSettings.setText(searchFormat);
                 SearchSetting searchSetting =getSearchSetting(searchFormat);
                 // Apply filter
                 OHMDateFilterFunctions.applyDateFilter(searchSetting, false);
@@ -122,8 +122,8 @@ public class OHMDateFilterDialog extends ToggleDialog {
             // Midle date is the date the user insert
             Date midDate = UtilDates.stringToDate(fixedDate_str);
             int days = UtilDates.daysFromYear0(midDate);
-            int minimum = days - DAYS_IN_YEAR * 50;
-            int maximum = days + DAYS_IN_YEAR * 50;
+            int minimum = days - DAYS_IN_YEAR * 100;
+            int maximum = days + DAYS_IN_YEAR * 100;
             int minValue = days - DAYS_IN_YEAR * 20;
             int maxValue = days + DAYS_IN_YEAR * 20;
 
