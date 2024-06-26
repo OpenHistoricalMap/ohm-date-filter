@@ -13,8 +13,8 @@
     <!--<property name="plugin.stage" value="..."/>-->
     <property name="plugin.canloadatruntime" value="true"/>
     <!-- Path to include SwingX and other JAR libraries -->
-    <path id="classpath">
+<!--    <path id="classpath">
         <fileset dir="lib" includes="*.jar"/>
-    </path>
+    </path>-->
     <import file="../build-common.xml"/>
 </project>

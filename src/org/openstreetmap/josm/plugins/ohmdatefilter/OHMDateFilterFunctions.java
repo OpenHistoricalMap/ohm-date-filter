@@ -69,46 +69,46 @@ public class OHMDateFilterFunctions {
         return MainApplication.getLayerManager().getEditDataSet();
     }
 
-    public static int[] getMinMax() {
-        DataSet dataSet = MainApplication.getLayerManager().getEditDataSet();
-
-        Date minStartDate = null;
-        Date maxEndDate = null;
-        SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd");
-
-        for (Way way : dataSet.getWays()) {
-            String startDateString = way.getKeys().get("start_date");
-            String endDateString = way.getKeys().get("end_date");
-
-            System.err.println(startDateString);
-            System.err.println(endDateString);
-
-            try {
-                if (startDateString != null) {
-                    Date startDate = dateFormat.parse(startDateString);
-                    if (minStartDate == null || startDate.before(minStartDate)) {
-                        minStartDate = startDate;
-                    }
-                }
-
-                if (endDateString != null) {
-                    Date endDate = dateFormat.parse(endDateString);
-                    if (maxEndDate == null || endDate.after(maxEndDate)) {
-                        maxEndDate = endDate;
-                    }
-                }
-            } catch (ParseException e) {
-                e.printStackTrace();
-            }
-        }
-
-        if (minStartDate != null && maxEndDate != null) {
-            System.err.println(minStartDate.getYear());
-
-            System.err.println(maxEndDate.getYear());
-            return new int[]{(int) minStartDate.getYear(), (int) maxEndDate.getYear()};
-        } else {
-            return null;
-        }
-    }
+//    public static int[] getMinMax() {
+//        DataSet dataSet = MainApplication.getLayerManager().getEditDataSet();
+//
+//        Date minStartDate = null;
+//        Date maxEndDate = null;
+//        SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd");
+//
+//        for (Way way : dataSet.getWays()) {
+//            String startDateString = way.getKeys().get("start_date");
+//            String endDateString = way.getKeys().get("end_date");
+//
+//            System.err.println(startDateString);
+//            System.err.println(endDateString);
+//
+//            try {
+//                if (startDateString != null) {
+//                    Date startDate = dateFormat.parse(startDateString);
+//                    if (minStartDate == null || startDate.before(minStartDate)) {
+//                        minStartDate = startDate;
+//                    }
+//                }
+//
+//                if (endDateString != null) {
+//                    Date endDate = dateFormat.parse(endDateString);
+//                    if (maxEndDate == null || endDate.after(maxEndDate)) {
+//                        maxEndDate = endDate;
+//                    }
+//                }
+//            } catch (ParseException e) {
+//                e.printStackTrace();
+//            }
+//        }
+//
+//        if (minStartDate != null && maxEndDate != null) {
+//            System.err.println(minStartDate.getYear());
+//
+//            System.err.println(maxEndDate.getYear());
+//            return new int[]{(int) minStartDate.getYear(), (int) maxEndDate.getYear()};
+//        } else {
+//            return null;
+//        }
+//    }
 }

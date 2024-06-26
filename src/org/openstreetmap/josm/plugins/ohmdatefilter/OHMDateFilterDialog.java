@@ -29,7 +29,7 @@ public class OHMDateFilterDialog extends ToggleDialog {
 
     final int DAYS_IN_YEAR = 365;
 
-    private OHMDateFilterCalendar dateFilterCalendar = new OHMDateFilterCalendar(new Date(), "Set an estimated date to filter");
+//    private OHMDateFilterCalendar dateFilterCalendar = new OHMDateFilterCalendar(new Date(), "Set an estimated date to filter");
     private JTextField jTextFieldYear = new JTextField();
     private JTextField jTextSettings = new JTextField();
     private RangeSlider rangeSlider = new RangeSlider();
@@ -48,11 +48,11 @@ public class OHMDateFilterDialog extends ToggleDialog {
             @Override
             public void actionPerformed(ActionEvent e) {
 //                
-              String searchFormat = jTextSettings.getText();
-              System.err.println("Search format: " + searchFormat);
-              SearchSetting searchSetting =getSearchSetting(searchFormat);
-              // Apply filter
-              OHMDateFilterFunctions.applyDateFilter(searchSetting, true);
+                String searchFormat = jTextSettings.getText();
+                System.err.println("Search format: " + searchFormat);
+                SearchSetting searchSetting = getSearchSetting(searchFormat);
+                // Apply filter
+                OHMDateFilterFunctions.applyDateFilter(searchSetting, true);
             }
         });
         //Add panels 
@@ -101,7 +101,7 @@ public class OHMDateFilterDialog extends ToggleDialog {
                 String searchFormat = getSearchFormat(slider.getValue(), slider.getUpperValue());
                 System.err.println("Search format: " + searchFormat);
                 jTextSettings.setText(searchFormat);
-                SearchSetting searchSetting =getSearchSetting(searchFormat);
+                SearchSetting searchSetting = getSearchSetting(searchFormat);
                 // Apply filter
                 OHMDateFilterFunctions.applyDateFilter(searchSetting, false);
             }
@@ -114,30 +114,72 @@ public class OHMDateFilterDialog extends ToggleDialog {
     }
 
     private void setMinMaxYearForSlider(String datestr) {
+
+        boolean isMonthValue = false;
+
+        System.err.println("setMinMaxYearForSlider -> ==================== " + datestr);
+
+        if (datestr.contains("-")) {
+            isMonthValue = true;
+        }
+
+        System.err.println("isMonthValue -> ==================== " + isMonthValue);
+
         try {
-            // Fix date format
+            // Conver string date to date format
             String fixedDate_str = UtilDates.formatDate(datestr);
             System.err.println("fixedDate : " + fixedDate_str);
 
             // Midle date is the date the user insert
             Date midDate = UtilDates.stringToDate(fixedDate_str);
-            int days = UtilDates.daysFromYear0(midDate);
-            int minimum = days - DAYS_IN_YEAR * 100;
-            int maximum = days + DAYS_IN_YEAR * 100;
-            int minValue = days - DAYS_IN_YEAR * 20;
-            int maxValue = days + DAYS_IN_YEAR * 20;
+
+            //===============================================
+            //==================Year evaluation==============
+            //===============================================
+            // Get number of days from year 0 to the midle date
+            int daysFromYear0 = UtilDates.daysFromYear0(midDate);
+            System.err.println("daysFromYear0 : " + daysFromYear0);
+
+            // Current year
+            int year = midDate.getYear();
+
+            int minRange = daysFromYear0 - UtilDates.getDaysInYears(year, -2);
+            int maxRange = daysFromYear0 + UtilDates.getDaysInYears(year, +2);
+
+            int minWindow = daysFromYear0 + 1;
+            int maxWindow = daysFromYear0 + UtilDates.getDaysInYear(year);
+
+            // Values for a Month
+            if (isMonthValue) {
+                int daysMonth = UtilDates.daysInMonth(midDate.getYear(), midDate.getMonth());
+
+                String fixedDate_str_ = UtilDates.formatDate(String.valueOf(midDate.getYear()));
+                Date midDate_ = UtilDates.stringToDate(fixedDate_str_);
+
+                int daysFromYear0_ = UtilDates.daysFromYear0(midDate_);
+
+                minRange = daysFromYear0_;
+                int[] maxRangeYears_ = new int[]{year};
+//                maxRange = daysFromYear0_ + UtilDates.getDaysInYears(maxRangeYears_);
+
+                minWindow = daysFromYear0;
+                maxWindow = daysFromYear0 + daysMonth - 1;
+
+            }
 
             // Remove print later
-            System.err.println("minimum : " + minimum);
-            System.err.println("maximum : " + maximum);
-            System.err.println("minValue : " + minValue);
-            System.err.println("maxValue : " + maxValue);
+            System.err.println("minRange : " + minRange);
+            System.err.println("minWindow : " + minWindow);
+            System.err.println("maxWindow : " + maxWindow);
+            System.err.println("maxRange : " + maxRange);
 
-            // Update Range for Slider
-            rangeSlider.setMinimum(minimum);
-            rangeSlider.setMaximum(maximum);
-            rangeSlider.setValue(minValue);
-            rangeSlider.setUpperValue(maxValue);
+            // Fill range
+            rangeSlider.setMinimum(minRange);
+            rangeSlider.setMaximum(maxRange);
+
+            rangeSlider.setUpperValue(maxWindow);
+
+            rangeSlider.setValue(minWindow);
 
         } catch (NumberFormatException e) {
             System.out.println("Invalid year format: ");

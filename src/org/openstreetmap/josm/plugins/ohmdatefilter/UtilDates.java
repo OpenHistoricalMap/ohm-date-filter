@@ -10,6 +10,9 @@ import java.util.Calendar;
 import java.util.Date;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+import java.time.YearMonth;
+import java.util.HashMap;
+import java.util.Map;
 
 public class UtilDates {
 
@@ -225,4 +228,37 @@ public class UtilDates {
         SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd");
         return sdf.format(date);
     }
+
+    public static int getDaysInMonth(int year, int month) {
+        if (month < 1 || month > 12) {
+            throw new IllegalArgumentException("Invalid month: " + month);
+        }
+        YearMonth yearMonth = YearMonth.of(year, month);
+        return yearMonth.lengthOfMonth();
+    }
+
+    public static int getDaysInYear(int year) {
+        if ((year % 4 == 0 && year % 100 != 0) || (year % 400 == 0)) {
+            return 366;
+        } else {
+            return 365;
+        }
+    }
+
+    public static int getDaysInYears(int year, int rangeYears) {
+        int days = 0;
+        if (rangeYears < 0) {
+            for (int i = year + rangeYears; i < year; i++) {
+                days += getDaysInYear(i);
+            }
+            days = days - 1;
+        } else {
+            for (int i = year; i <= year + rangeYears; i++) {
+                days += getDaysInYear(i);
+            }
+        }
+
+        return days;
+    }
+
 }
