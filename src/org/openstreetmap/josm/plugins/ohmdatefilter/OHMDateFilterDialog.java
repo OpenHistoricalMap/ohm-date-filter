@@ -27,9 +27,7 @@ import org.openstreetmap.josm.tools.Shortcut;
 
 public class OHMDateFilterDialog extends ToggleDialog {
 
-    final int DAYS_IN_YEAR = 365;
-
-//    private OHMDateFilterCalendar dateFilterCalendar = new OHMDateFilterCalendar(new Date(), "Set an estimated date to filter");
+    DateHandler dateHandler = new DateHandler();
     private JTextField jTextFieldYear = new JTextField();
     private JTextField jTextSettings = new JTextField();
     private RangeSlider rangeSlider = new RangeSlider();
@@ -107,64 +105,31 @@ public class OHMDateFilterDialog extends ToggleDialog {
             }
         });
 
-        panel.add(rangeSlider, new GridBagConstraints(0, 2, 2, 1, 1.0, 0.0, // Adjusted weightx to 1.0
-                GridBagConstraints.NORTHWEST, GridBagConstraints.HORIZONTAL, // Changed fill to HORIZONTAL
+        panel.add(rangeSlider, new GridBagConstraints(0, 2, 2, 1, 1.0, 0.0,
+                GridBagConstraints.NORTHWEST, GridBagConstraints.HORIZONTAL,
                 new Insets(0, 0, 0, 0), 0, 0));
         return panel;
     }
 
     private void setMinMaxYearForSlider(String datestr) {
-
         boolean isMonthValue = false;
-
-        System.err.println("setMinMaxYearForSlider -> ==================== " + datestr);
-
         if (datestr.contains("-")) {
             isMonthValue = true;
         }
-
-        System.err.println("isMonthValue -> ==================== " + isMonthValue);
-
         try {
             // Conver string date to date format
-            String fixedDate_str = UtilDates.formatDate(datestr);
-            System.err.println("fixedDate : " + fixedDate_str);
+            String currentDate_str = UtilDates.formatDate(datestr);
+            dateHandler.setDate(currentDate_str);
+            int minRange = dateHandler.getDaysAfterAdjustingYears(-2);
+            int maxRange = dateHandler.getDaysAfterAdjustingYears(2);
+            int minWindow = dateHandler.getDaysAfterAdjustingYears(0);
+            int maxWindow = dateHandler.getDaysAfterAdjustingYears(1);
 
-            // Midle date is the date the user insert
-            Date midDate = UtilDates.stringToDate(fixedDate_str);
-
-            //===============================================
-            //==================Year evaluation==============
-            //===============================================
-            // Get number of days from year 0 to the midle date
-            int daysFromYear0 = UtilDates.daysFromYear0(midDate);
-            System.err.println("daysFromYear0 : " + daysFromYear0);
-
-            // Current year
-            int year = midDate.getYear();
-
-            int minRange = daysFromYear0 - UtilDates.getDaysInYears(year, -2);
-            int maxRange = daysFromYear0 + UtilDates.getDaysInYears(year, +2);
-
-            int minWindow = daysFromYear0 + 1;
-            int maxWindow = daysFromYear0 + UtilDates.getDaysInYear(year);
-
-            // Values for a Month
             if (isMonthValue) {
-                int daysMonth = UtilDates.daysInMonth(midDate.getYear(), midDate.getMonth());
-
-                String fixedDate_str_ = UtilDates.formatDate(String.valueOf(midDate.getYear()));
-                Date midDate_ = UtilDates.stringToDate(fixedDate_str_);
-
-                int daysFromYear0_ = UtilDates.daysFromYear0(midDate_);
-
-                minRange = daysFromYear0_;
-                int[] maxRangeYears_ = new int[]{year};
-//                maxRange = daysFromYear0_ + UtilDates.getDaysInYears(maxRangeYears_);
-
-                minWindow = daysFromYear0;
-                maxWindow = daysFromYear0 + daysMonth - 1;
-
+                minRange = dateHandler.getDaysAfterAdjustingYears(0);
+                maxRange = dateHandler.getDaysAfterAdjustingYears(1);
+                minWindow = dateHandler.getDaysAfterAdjustingMonths(0);
+                maxWindow = dateHandler.getDaysAfterAdjustingMonths(1);
             }
 
             // Remove print later
@@ -176,9 +141,7 @@ public class OHMDateFilterDialog extends ToggleDialog {
             // Fill range
             rangeSlider.setMinimum(minRange);
             rangeSlider.setMaximum(maxRange);
-
             rangeSlider.setUpperValue(maxWindow);
-
             rangeSlider.setValue(minWindow);
 
         } catch (NumberFormatException e) {
@@ -187,8 +150,8 @@ public class OHMDateFilterDialog extends ToggleDialog {
     }
 
     private String getSearchFormat(int start_num_days, int end_num_days) {
-        String start_date_str = UtilDates.dateFromDays(start_num_days);
-        String end_date_str = UtilDates.dateFromDays(end_num_days);
+        String start_date_str = dateHandler.getDateFromDaysSinceYearZero(start_num_days);
+        String end_date_str = dateHandler.getDateFromDaysSinceYearZero(end_num_days - 1);
         String filter_values = "start_date>" + start_date_str + " AND end_date<" + end_date_str;
         return filter_values;
     }

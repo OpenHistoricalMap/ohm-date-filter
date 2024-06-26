@@ -13,6 +13,7 @@ import java.util.regex.Pattern;
 import java.time.YearMonth;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.TimeZone;
 
 public class UtilDates {
 
@@ -153,29 +154,47 @@ public class UtilDates {
 
     public static Date stringToDate(String dateString) {
         try {
-            DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd");
-            LocalDate date = LocalDate.parse(dateString, formatter);
-            return Date.from(date.atStartOfDay(ZoneId.systemDefault()).toInstant());
+            LocalDate date;
+            if (dateString.matches("\\d{4}-\\d{2}-\\d{2}")) {
+                // Full date format (yyyy-MM-dd)
+                DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd");
+                date = LocalDate.parse(dateString, formatter);
+            } else if (dateString.matches("\\d{4}-\\d{2}")) {
+                // Year and month format (yyyy-MM), default day to 01
+                DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM");
+                date = LocalDate.parse(dateString, formatter).withDayOfMonth(1);
+            } else if (dateString.matches("\\d{4}")) {
+                // Year format (yyyy), default month and day to 01
+                DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy");
+                date = LocalDate.parse(dateString, formatter).withMonth(1).withDayOfMonth(1);
+            } else {
+                throw new IllegalArgumentException("Invalid date format: " + dateString);
+            }
+            return Date.from(date.atStartOfDay(ZoneId.of("Etc/UTC")).toInstant());
         } catch (DateTimeParseException e) {
             throw new IllegalArgumentException("Invalid date format: " + dateString, e);
         }
     }
 
     public static String timestamp2DateStr(int timestamp) {
-        Date date = new Date(timestamp);
+        Date date = new Date((long) timestamp * 1000); // convert seconds to milliseconds
         SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd");
+        sdf.setTimeZone(TimeZone.getTimeZone("UTC"));
         String formattedDate = sdf.format(date);
         return formattedDate;
     }
 
     public static boolean isLeapYear(int year) {
-        if ((year % 4 == 0 && year % 100 != 0) || (year % 400 == 0)) {
-            return true;
-        }
-        return false;
+        return (year % 4 == 0 && year % 100 != 0) || (year % 400 == 0);
     }
 
-    public static int daysInMonth(int month, int year) {
+    public static int getNumDaysInMonth(Date date) {
+        Calendar calendar = Calendar.getInstance();
+        calendar.setTime(date);
+
+        int month = calendar.get(Calendar.MONTH) + 1;
+        int year = calendar.get(Calendar.YEAR);
+
         switch (month) {
             case 2:
                 return isLeapYear(year) ? 29 : 28;
@@ -189,8 +208,8 @@ public class UtilDates {
         }
     }
 
-    public static int daysFromYear0(Date date) {
-        Calendar calendar = Calendar.getInstance();
+    public static int getNumDaysSinceYear0(Date date) {
+        Calendar calendar = Calendar.getInstance(TimeZone.getTimeZone("Etc/UTC"));
         calendar.setTime(date);
 
         int year = calendar.get(Calendar.YEAR);
@@ -206,7 +225,7 @@ public class UtilDates {
 
         // Adding days from complete months of the current year
         for (int m = 0; m < month; m++) {
-            totalDays += daysInMonth(m, year);
+            totalDays += getNumDaysInMonth(date);
         }
 
         // Adding days of the current month
@@ -216,7 +235,7 @@ public class UtilDates {
     }
 
     public static String dateFromDays(int days) {
-        Calendar calendar = Calendar.getInstance();
+        Calendar calendar = Calendar.getInstance(TimeZone.getTimeZone("Etc/UTC"));
         calendar.set(Calendar.YEAR, 0);
         calendar.set(Calendar.MONTH, Calendar.JANUARY);
         calendar.set(Calendar.DAY_OF_MONTH, 1);
@@ -225,7 +244,10 @@ public class UtilDates {
         calendar.add(Calendar.DAY_OF_MONTH, days);
 
         Date date = calendar.getTime();
+
         SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd");
+        sdf.setTimeZone(TimeZone.getTimeZone("UTC"));
+
         return sdf.format(date);
     }
 
@@ -253,7 +275,7 @@ public class UtilDates {
             }
             days = days - 1;
         } else {
-            for (int i = year; i <= year + rangeYears; i++) {
+            for (int i = year; i < year + rangeYears; i++) {
                 days += getDaysInYear(i);
             }
         }
