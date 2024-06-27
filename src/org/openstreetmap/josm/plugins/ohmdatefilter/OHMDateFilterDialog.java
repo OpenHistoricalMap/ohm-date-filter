@@ -77,8 +77,8 @@ public class OHMDateFilterDialog extends ToggleDialog {
                         KeyEvent.VK_R, Shortcut.SHIFT), true) {
             @Override
             public void actionPerformed(ActionEvent e) {
-                System.out.println("OHMActionSaver performed!");
-
+                SearchSetting searchSetting = new SearchSetting();
+                OHMDateFilterFunctions.applyDateFilter(searchSetting, false);
             }
         };
 
