@@ -18,15 +18,15 @@ public class DateHandler {
 
     public void setDate(String dateString) {
         if (dateString.matches("\\d{4}")) {
-            dateString += "-01-01"; // Completa el año con "-01-01" si solo se proporciona el año
+            dateString += "-01-01"; 
         } else if (dateString.matches("\\d{4}-\\d{2}")) {
-            dateString += "-01"; // Completa el año y el mes con "-01" si solo se proporciona el año y el mes
+            dateString += "-01";
         }
 
         try {
             this.date = LocalDate.parse(dateString, formatter);
         } catch (DateTimeParseException e) {
-            System.out.println("Error: El formato de fecha debe ser 'yyyy-MM-dd'.");
+            System.out.println("Error: Format should be 'yyyy-MM-dd'.");
             this.date = null;
         }
     }
@@ -35,7 +35,7 @@ public class DateHandler {
         if (this.date != null) {
             return this.date.format(formatter);
         } else {
-            return "Fecha no válida.";
+            return "Invalid date.";
         }
     }
 
@@ -44,7 +44,7 @@ public class DateHandler {
             LocalDate yearZero = LocalDate.of(0, 1, 1);
             return (int) (this.date.toEpochDay() - yearZero.toEpochDay());
         } else {
-            System.out.println("Fecha no válida.");
+            System.out.println("Invalid date.");
             return -1;
         }
     }
@@ -54,7 +54,7 @@ public class DateHandler {
             LocalDate adjustedDate = (years > 0) ? this.date.plusYears(years) : this.date.minusYears(-years);
             return (int) (adjustedDate.toEpochDay() - LocalDate.of(0, 1, 1).toEpochDay());
         } else {
-            System.out.println("Fecha no válida.");
+            System.out.println("Invalid date.");
             return -1;
         }
     }
@@ -64,8 +64,8 @@ public class DateHandler {
             LocalDate adjustedDate = (years > 0) ? this.date.plusYears(years) : this.date.minusYears(-years);
             return adjustedDate.format(formatter);
         } else {
-            System.out.println("Fecha no válida.");
-            return "Fecha no válida.";
+            System.out.println("Invalid date.");
+            return "Invalid date.";
         }
     }
 
@@ -74,7 +74,7 @@ public class DateHandler {
             LocalDate adjustedDate = (months > 0) ? this.date.plusMonths(months) : this.date.minusMonths(-months);
             return (int) (adjustedDate.toEpochDay() - LocalDate.of(0, 1, 1).toEpochDay());
         } else {
-            System.out.println("Fecha no válida.");
+            System.out.println("Invalid date.");
             return -1;
         }
     }
@@ -84,8 +84,8 @@ public class DateHandler {
             LocalDate adjustedDate = (months > 0) ? this.date.plusMonths(months) : this.date.minusMonths(-months);
             return adjustedDate.format(formatter);
         } else {
-            System.out.println("Fecha no válida.");
-            return "Fecha no válida.";
+            System.out.println("Invalid date.");
+            return "Invalid date.";
         }
     }
 
