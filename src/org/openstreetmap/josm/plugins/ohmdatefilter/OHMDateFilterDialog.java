@@ -16,15 +16,20 @@ import javax.swing.JButton;
 import javax.swing.JPanel;
 import javax.swing.JTextField;
 import javax.swing.JComboBox;
+import javax.swing.JOptionPane;
 
 import javax.swing.event.ChangeEvent;
 import javax.swing.event.ChangeListener;
 import javax.swing.event.DocumentEvent;
 import javax.swing.event.DocumentListener;
+import org.openstreetmap.josm.actions.JosmAction;
 import org.openstreetmap.josm.data.osm.search.SearchSetting;
+import org.openstreetmap.josm.gui.HelpAwareOptionPane;
+import org.openstreetmap.josm.gui.MainApplication;
 
 import org.openstreetmap.josm.gui.SideButton;
 import org.openstreetmap.josm.gui.dialogs.ToggleDialog;
+import static org.openstreetmap.josm.gui.help.HelpUtil.ht;
 import org.openstreetmap.josm.tools.Shortcut;
 
 public class OHMDateFilterDialog extends ToggleDialog {
@@ -46,25 +51,45 @@ public class OHMDateFilterDialog extends ToggleDialog {
                 Shortcut.registerShortcut("ohmDateFilter", tr("Toggle: {0}", tr("OpenHistoricalMap Date Filter")), KeyEvent.VK_I,
                         Shortcut.ALT_CTRL_SHIFT), 90);
 
-        //Main panel
-        JPanel mainPanel = new JPanel(new GridLayout(4, 1));
-        JButton jButtonSaveFilter = new JButton("Save Filter");
-        jButtonSaveFilter.addActionListener(new ActionListener() {
+        JosmAction oHMActionSaver = new JosmAction(
+                tr("Save Filter"), "save",
+                tr("Save Filter"),
+                Shortcut.registerShortcut("tools:ohm_save_filter", tr("More tools: {0}", tr("Save Filter")),
+                        KeyEvent.VK_S, Shortcut.SHIFT), true) {
             @Override
             public void actionPerformed(ActionEvent e) {
                 String searchFormat = jTextSettings.getText();
-                System.err.println("Search format: " + searchFormat);
                 SearchSetting searchSetting = getSearchSetting(searchFormat);
-                // Apply filter
                 OHMDateFilterFunctions.applyDateFilter(searchSetting, true);
             }
-        });
+        };
+
+        JosmAction oHMActionReset = new JosmAction(
+                tr("Reset Filters"), "reset",
+                tr("Reset Filters"),
+                Shortcut.registerShortcut("tools:ohm_reset_filter", tr("More tools: {0}", tr("Reset Filters")),
+                        KeyEvent.VK_R, Shortcut.SHIFT), true) {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                System.out.println("OHMActionSaver performed!");
+
+            }
+        };
+
+        SideButton sideButtonSaveFilter = new SideButton(oHMActionSaver);
+        SideButton sideButtonReset = new SideButton(oHMActionReset);
+
+        //Main panel
+        JPanel mainPanel = new JPanel(new GridLayout(3, 1));
+        mainPanel.setMinimumSize(new Dimension(100, 30));
+
         //Add panels 
         mainPanel.add(imputDatePanel());
         mainPanel.add(rangeSliderPanel());
         mainPanel.add(jTextSettings);
-        mainPanel.add(jButtonSaveFilter);
-        createLayout(mainPanel, false, Arrays.asList(new SideButton[]{}));
+
+        createLayout(mainPanel, false, Arrays.asList(sideButtonSaveFilter, sideButtonReset));
+
     }
 
     private JPanel imputDatePanel() {
@@ -127,7 +152,6 @@ public class OHMDateFilterDialog extends ToggleDialog {
 
                     }
                 } catch (NumberFormatException ex) {
-                    // Handle invalid input
                     System.out.println("Invalid number: " + text);
                 }
             }
@@ -184,6 +208,13 @@ public class OHMDateFilterDialog extends ToggleDialog {
             }
 
             if (minRange < 0 || maxRange < 0 || minWindow < 0 || maxWindow < 0) {
+                HelpAwareOptionPane.showMessageDialogInEDT(
+                        MainApplication.getMainFrame(),
+                        "Wrong date: " + currentDate_str,
+                        tr("Warning"),
+                        JOptionPane.WARNING_MESSAGE,
+                        ht("/Action/Open#MissingImporterForFiles")
+                );
                 return;
             }
 
