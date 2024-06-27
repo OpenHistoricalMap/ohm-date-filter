@@ -15,6 +15,8 @@ import javax.swing.JButton;
 
 import javax.swing.JPanel;
 import javax.swing.JTextField;
+import javax.swing.JComboBox;
+
 import javax.swing.event.ChangeEvent;
 import javax.swing.event.ChangeListener;
 import org.openstreetmap.josm.data.osm.search.SearchSetting;
@@ -29,6 +31,7 @@ public class OHMDateFilterDialog extends ToggleDialog {
     private JTextField jTextFieldYear = new JTextField();
     private JTextField jTextSettings = new JTextField();
     private RangeSlider rangeSlider = new RangeSlider();
+    private JComboBox jComboBoxRange = new JComboBox<>();
 
     public OHMDateFilterDialog() {
         super(tr("OpenHistoricalMap Date Filter"),
@@ -43,7 +46,6 @@ public class OHMDateFilterDialog extends ToggleDialog {
         jButtonSaveFilter.addActionListener(new ActionListener() {
             @Override
             public void actionPerformed(ActionEvent e) {
-//                
                 String searchFormat = jTextSettings.getText();
                 System.err.println("Search format: " + searchFormat);
                 SearchSetting searchSetting = getSearchSetting(searchFormat);
@@ -61,9 +63,12 @@ public class OHMDateFilterDialog extends ToggleDialog {
 
     private JPanel imputDatePanel() {
         // Imput panel to add initial date
-        JPanel panel = new JPanel(new GridLayout(1, 2));
-        panel.setBorder(javax.swing.BorderFactory.createTitledBorder("Date range"));
+        JPanel panel = new JPanel(new GridLayout(1, 3));
+        panel.setBorder(javax.swing.BorderFactory.createTitledBorder("Set Date and Range value"));
         panel.add(jTextFieldYear);
+        jComboBoxRange.setModel(new javax.swing.DefaultComboBoxModel<>(new Integer[]{2, 5, 10, 50, 100, 200, 500}));
+        panel.add(jComboBoxRange, java.awt.BorderLayout.CENTER);
+
         JButton jButtonSetYear = new JButton("Set date");
         panel.add(jButtonSetYear);
 
@@ -72,8 +77,9 @@ public class OHMDateFilterDialog extends ToggleDialog {
             @Override
             public void actionPerformed(ActionEvent e) {
                 String input = jTextFieldYear.getText();
+                int RangeValue = (int) jComboBoxRange.getSelectedItem();
                 if (input != null && !input.isEmpty()) {
-                    setMinMaxYearForSlider(input);
+                    setMinMaxYearForSlider(input, RangeValue);
                 }
             }
         });
@@ -84,7 +90,7 @@ public class OHMDateFilterDialog extends ToggleDialog {
         // Panel that contains slider range panel 
         JPanel panel = new JPanel(new GridBagLayout());
         rangeSlider.setPreferredSize(new Dimension(300, 100));
-        panel.setBorder(javax.swing.BorderFactory.createTitledBorder("Date range"));
+        panel.setBorder(javax.swing.BorderFactory.createTitledBorder("Filter by Date Range"));
         rangeSlider.addChangeListener(new ChangeListener() {
             public void stateChanged(ChangeEvent e) {
 
@@ -105,17 +111,18 @@ public class OHMDateFilterDialog extends ToggleDialog {
         return panel;
     }
 
-    private void setMinMaxYearForSlider(String datestr) {
+    private void setMinMaxYearForSlider(String datestr, int RangeValue) {
         boolean isMonthValue = false;
         if (datestr.contains("-")) {
             isMonthValue = true;
         }
         try {
+
             // Conver string date to date format
             String currentDate_str = UtilDates.formatDate(datestr);
             dateHandler.setDate(currentDate_str);
-            int minRange = dateHandler.getDaysAfterAdjustingYears(-2);
-            int maxRange = dateHandler.getDaysAfterAdjustingYears(2);
+            int minRange = dateHandler.getDaysAfterAdjustingYears(-1 * RangeValue);
+            int maxRange = dateHandler.getDaysAfterAdjustingYears(RangeValue);
             int minWindow = dateHandler.getDaysAfterAdjustingYears(0);
             int maxWindow = dateHandler.getDaysAfterAdjustingYears(1);
 
@@ -125,13 +132,7 @@ public class OHMDateFilterDialog extends ToggleDialog {
                 minWindow = dateHandler.getDaysAfterAdjustingMonths(0);
                 maxWindow = dateHandler.getDaysAfterAdjustingMonths(1);
             }
-
-            // Remove print later
-            System.err.println("minRange : " + minRange);
-            System.err.println("minWindow : " + minWindow);
-            System.err.println("maxWindow : " + maxWindow);
-            System.err.println("maxRange : " + maxRange);
-
+            
             // Fill range
             rangeSlider.setMinimum(minRange);
             rangeSlider.setMaximum(maxRange);
