@@ -11,10 +11,8 @@ import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.awt.event.KeyEvent;
 import java.util.Arrays;
-import java.util.Date;
 import javax.swing.JButton;
 
-import javax.swing.JLabel;
 import javax.swing.JPanel;
 import javax.swing.JTextField;
 import javax.swing.event.ChangeEvent;
@@ -91,10 +89,6 @@ public class OHMDateFilterDialog extends ToggleDialog {
             public void stateChanged(ChangeEvent e) {
 
                 RangeSlider slider = (RangeSlider) e.getSource();
-
-                System.err.println("####### Slider values");
-                System.err.println("Start num days: " + slider.getValue());
-                System.err.println("End num days: " + slider.getUpperValue());
                 // Get serach format
                 String searchFormat = getSearchFormat(slider.getValue(), slider.getUpperValue());
                 System.err.println("Search format: " + searchFormat);
