@@ -1,6 +1,7 @@
 package org.openstreetmap.josm.plugins.ohmdatefilter;
 
 import java.awt.Dimension;
+import java.awt.FlowLayout;
 import java.awt.GridBagConstraints;
 import java.awt.GridBagLayout;
 import static org.openstreetmap.josm.tools.I18n.tr;
@@ -11,12 +12,14 @@ import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.awt.event.KeyEvent;
 import java.util.Arrays;
+import javax.swing.ButtonGroup;
 import javax.swing.JButton;
 
 import javax.swing.JPanel;
 import javax.swing.JTextField;
 import javax.swing.JComboBox;
 import javax.swing.JOptionPane;
+import javax.swing.JRadioButton;
 
 import javax.swing.event.ChangeEvent;
 import javax.swing.event.ChangeListener;
@@ -37,6 +40,9 @@ public class OHMDateFilterDialog extends ToggleDialog {
     String[] listYears = new String[]{"2 years", "5 years", "10 years", "50 years", "100 years", "200 years", "500 years"};
     String[] listMonths = new String[]{"2 Months", "5 Months", "10 Months", "12 Months"};
     Boolean updateComoBox = false;
+    String filter_by = "both";
+    int current_lower_value = 0;
+    int current_upper_value = 0;
 
     DateHandler dateHandler = new DateHandler();
     private JTextField jTextFieldYear = new JTextField();
@@ -80,12 +86,14 @@ public class OHMDateFilterDialog extends ToggleDialog {
         SideButton sideButtonReset = new SideButton(oHMActionReset);
 
         //Main panel
-        JPanel mainPanel = new JPanel(new GridLayout(3, 1));
-        mainPanel.setMinimumSize(new Dimension(100, 30));
+        JPanel mainPanel = new JPanel(new GridLayout(4, 1));
+        mainPanel.setMinimumSize(new Dimension(200, 30));
 
         //Add panels 
         mainPanel.add(imputDatePanel());
         mainPanel.add(rangeSliderPanel());
+        mainPanel.add(radioOptions());
+
         mainPanel.add(jTextSettings);
 
         createLayout(mainPanel, false, Arrays.asList(sideButtonSaveFilter, sideButtonReset));
@@ -164,18 +172,14 @@ public class OHMDateFilterDialog extends ToggleDialog {
         // Panel that contains slider range panel 
         JPanel panel = new JPanel(new GridBagLayout());
         rangeSlider.setPreferredSize(new Dimension(300, 100));
-        panel.setBorder(javax.swing.BorderFactory.createTitledBorder("Filter by Date Range"));
+        panel.setBorder(javax.swing.BorderFactory.createTitledBorder("Set Date Range"));
         rangeSlider.addChangeListener(new ChangeListener() {
             public void stateChanged(ChangeEvent e) {
-
                 RangeSlider slider = (RangeSlider) e.getSource();
                 // Get serach format
-                String searchFormat = getSearchFormat(slider.getValue(), slider.getUpperValue());
-                System.err.println("Search format: " + searchFormat);
-                jTextSettings.setText(searchFormat);
-                SearchSetting searchSetting = getSearchSetting(searchFormat);
-                // Apply filter
-                OHMDateFilterFunctions.applyDateFilter(searchSetting, false);
+                current_lower_value = slider.getValue();
+                current_upper_value = slider.getUpperValue();
+                filterObjects();
             }
         });
 
@@ -183,6 +187,64 @@ public class OHMDateFilterDialog extends ToggleDialog {
                 GridBagConstraints.NORTHWEST, GridBagConstraints.HORIZONTAL,
                 new Insets(0, 0, 0, 0), 0, 0));
         return panel;
+    }
+
+    private JPanel radioOptions() {
+        // Crear el panel
+        JPanel panel = new JPanel(new GridLayout(1, 3));
+        panel.setBorder(javax.swing.BorderFactory.createTitledBorder("Filter by"));
+
+        // Crear los botones de radio
+        JRadioButton startDateButton = new JRadioButton("start_date");
+        JRadioButton endDateButton = new JRadioButton("end_date");
+        JRadioButton bothButton = new JRadioButton("both");
+
+        // Crear el ButtonGroup y agregar los botones de radio
+        ButtonGroup group = new ButtonGroup();
+        group.add(startDateButton);
+        group.add(endDateButton);
+        group.add(bothButton);
+        bothButton.setSelected(true);
+
+        // Agregar los botones de radio al panel
+        panel.add(startDateButton);
+        panel.add(endDateButton);
+        panel.add(bothButton);
+
+        // Agregar ActionListener a cada botón de radio
+        startDateButton.addActionListener(new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                filter_by = "start_date";
+                filterObjects();
+            }
+        });
+
+        endDateButton.addActionListener(new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                filter_by = "end_date";
+                filterObjects();
+            }
+        });
+
+        bothButton.addActionListener(new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                filter_by = "both";
+                filterObjects();
+            }
+        });
+        return panel;
+    }
+
+    private void filterObjects() {
+        String searchFormat = getSearchFormat(current_lower_value, current_upper_value);
+        System.err.println("Search format: " + searchFormat);
+        jTextSettings.setText(searchFormat);
+        SearchSetting searchSetting = getSearchSetting(searchFormat);
+        // Apply filter
+        OHMDateFilterFunctions.applyDateFilter(searchSetting, false);
     }
 
     private void setMinMaxYearForSlider(String datestr, int RangeValue) {
@@ -232,7 +294,14 @@ public class OHMDateFilterDialog extends ToggleDialog {
     private String getSearchFormat(int start_num_days, int end_num_days) {
         String start_date_str = dateHandler.getDateFromDaysSinceYearZero(start_num_days);
         String end_date_str = dateHandler.getDateFromDaysSinceYearZero(end_num_days - 1);
-        String filter_values = "start_date>" + start_date_str + " AND end_date<" + end_date_str;
+        String filter_values = "";
+        if (filter_by == "both") {
+            filter_values = "start_date>" + start_date_str + " AND end_date<" + end_date_str;
+        } else if (filter_by == "end_date") {
+            filter_values = "end_date<" + end_date_str;
+        } else if (filter_by == "start_date") {
+            filter_values = "start_date>" + start_date_str;
+        }
         return filter_values;
     }
 
