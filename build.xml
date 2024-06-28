@@ -3,7 +3,7 @@
     <!-- enter the SVN commit message -->
     <property name="commit.message" value="Filter OpenHistoricalMap objects by a range of dates"/>
     <property name="plugin.main.version" value="17712"/>
-    <property name="plugin.author" value="GeoCompas"/>
+    <property name="plugin.author" value="Rub21"/>
     <property name="plugin.class" value="org.openstreetmap.josm.plugins.ohmdatefilter.OHMDateFilterPlugin"/>
     <property name="plugin.description" value="Filter OpenHistoricalMap objects by a range of dates"/>
     <property name="plugin.icon" value="images/iconohmdatefilter.png"/>
@@ -13,8 +13,5 @@
     <!--<property name="plugin.stage" value="..."/>-->
     <property name="plugin.canloadatruntime" value="true"/>
     <!-- Path to include SwingX and other JAR libraries -->
-<!--    <path id="classpath">
-        <fileset dir="lib" includes="*.jar"/>
-    </path>-->
     <import file="../build-common.xml"/>
 </project>
