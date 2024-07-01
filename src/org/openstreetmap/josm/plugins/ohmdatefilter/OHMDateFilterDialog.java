@@ -1,7 +1,6 @@
 package org.openstreetmap.josm.plugins.ohmdatefilter;
 
 import java.awt.Dimension;
-import java.awt.FlowLayout;
 import java.awt.GridBagConstraints;
 import java.awt.GridBagLayout;
 import static org.openstreetmap.josm.tools.I18n.tr;
@@ -32,20 +31,24 @@ import org.openstreetmap.josm.gui.MainApplication;
 
 import org.openstreetmap.josm.gui.SideButton;
 import org.openstreetmap.josm.gui.dialogs.ToggleDialog;
-import static org.openstreetmap.josm.gui.help.HelpUtil.ht;
 import org.openstreetmap.josm.tools.Shortcut;
 
 public class OHMDateFilterDialog extends ToggleDialog {
 
     String[] listYears = new String[]{"2 years", "5 years", "10 years", "50 years", "100 years", "200 years", "500 years"};
-    String[] listMonths = new String[]{"2 Months", "5 Months", "10 Months", "12 Months"};
-    Boolean updateComoBox = false;
-    String filter_by = "both";
+    String[] listMonths = new String[]{"2 Month", "6 Months", "12 Months", "24 Months"};
+    String[] listDays = new String[]{"1 Days", "5 days", "10 days"};
+
+    Boolean updateComoBoxYear = false;
+    Boolean updateComoBoxMonth = true;
+    Boolean updateComoBoxDay = true;
+
+    String filter_by = "start_date";
     int current_lower_value = 0;
     int current_upper_value = 0;
 
     DateHandler dateHandler = new DateHandler();
-    private JTextField jTextFieldYear = new JTextField();
+    private JTextField jTextFieldInputDate = new JTextField();
     private JTextField jTextSettings = new JTextField();
     private RangeSlider rangeSlider = new RangeSlider();
     private JComboBox jComboBoxRange = new JComboBox<>();
@@ -55,7 +58,7 @@ public class OHMDateFilterDialog extends ToggleDialog {
                 "iconohmdatefilter16",
                 tr("Open OpenHistoricalMap date filter window"),
                 Shortcut.registerShortcut("ohmDateFilter", tr("Toggle: {0}", tr("OpenHistoricalMap Date Filter")), KeyEvent.VK_I,
-                        Shortcut.ALT_CTRL_SHIFT), 90);
+                        Shortcut.ALT_CTRL_SHIFT), 250);
 
         JosmAction oHMActionSaver = new JosmAction(
                 tr("Save Filter"), "save",
@@ -87,7 +90,7 @@ public class OHMDateFilterDialog extends ToggleDialog {
 
         //Main panel
         JPanel mainPanel = new JPanel(new GridLayout(4, 1));
-        mainPanel.setMinimumSize(new Dimension(200, 30));
+        mainPanel.setMinimumSize(new Dimension(500, 30));
 
         //Add panels 
         mainPanel.add(imputDatePanel());
@@ -104,7 +107,7 @@ public class OHMDateFilterDialog extends ToggleDialog {
         // Imput panel to add initial date
         JPanel panel = new JPanel(new GridLayout(1, 3));
         panel.setBorder(javax.swing.BorderFactory.createTitledBorder("Set Date and Range value"));
-        panel.add(jTextFieldYear);
+        panel.add(jTextFieldInputDate);
 
         jComboBoxRange.setModel(new javax.swing.DefaultComboBoxModel<>(listYears));
         panel.add(jComboBoxRange, java.awt.BorderLayout.CENTER);
@@ -116,15 +119,31 @@ public class OHMDateFilterDialog extends ToggleDialog {
         jButtonSetYear.addActionListener(new ActionListener() {
             @Override
             public void actionPerformed(ActionEvent e) {
-                String input = jTextFieldYear.getText();
-                int rangeValue = (int) UtilDates.getRangeValue(jComboBoxRange.getSelectedItem() + "");
+                String input_date = jTextFieldInputDate.getText();
 
-                if (input != null && !input.isEmpty()) {
-                    setMinMaxYearForSlider(input, rangeValue);
+                if (input_date != null && !input_date.isEmpty()) {
+                    dateHandler.setDate(input_date);
+                    if (dateHandler.getDate() != null) {
+                        setMinMaxValuesForSlider();
+
+                    } else {
+                        HelpAwareOptionPane.showMessageDialogInEDT(
+                                MainApplication.getMainFrame(),
+                                "Wrong date: " + input_date,
+                                tr("Warning"),
+                                JOptionPane.WARNING_MESSAGE,
+                                ht("/Action/Open#MissingImporterForFiles")
+                        );
+                    }
                 }
             }
+
+            private String ht(String actionOpenMissingImporterForFiles) {
+                throw new UnsupportedOperationException("Not supported yet."); // Generated from nbfs://nbhost/SystemFileSystem/Templates/Classes/Code/GeneratedMethodBody
+            }
         });
-        jTextFieldYear.getDocument().addDocumentListener(new DocumentListener() {
+
+        jTextFieldInputDate.getDocument().addDocumentListener(new DocumentListener() {
             public void changedUpdate(DocumentEvent e) {
                 handleTextChange();
             }
@@ -138,32 +157,57 @@ public class OHMDateFilterDialog extends ToggleDialog {
             }
 
             public void handleTextChange() {
-                String text = jTextFieldYear.getText();
+                String text = jTextFieldInputDate.getText();
 
                 try {
-                    if (text.contains("-")) {
-                        if (!updateComoBox) {
-                            jComboBoxRange.removeAllItems();
-                            for (String month : listMonths) {
-                                jComboBoxRange.addItem(month);
-                            }
-                        }
-                        updateComoBox = true;
-                    } else {
-                        if (updateComoBox) {
+                    String[] parts = text.split("-");
+                    for (String part : parts) {
+                        System.out.println(part);
+                    }
+                    if (parts.length == 1) {
+                        //year
+                        if (updateComoBoxYear) {
+
                             jComboBoxRange.removeAllItems();
                             for (String year : listYears) {
                                 jComboBoxRange.addItem(year);
                             }
-                            updateComoBox = false;
+                            updateComoBoxYear = false;
+                            updateComoBoxMonth = true;
+                            updateComoBoxDay = true;
                         }
 
+                    } else if (parts.length == 2) {
+
+                        //month
+                        if (updateComoBoxMonth) {
+                            jComboBoxRange.removeAllItems();
+                            for (String month : listMonths) {
+                                jComboBoxRange.addItem(month);
+                            }
+                            updateComoBoxYear = true;
+                            updateComoBoxMonth = false;
+                            updateComoBoxDay = true;
+                        }
+                    } else if (parts.length == 3) {
+                        //day
+                        if (updateComoBoxDay) {
+                            jComboBoxRange.removeAllItems();
+                            for (String day : listDays) {
+                                jComboBoxRange.addItem(day);
+                            }
+                            updateComoBoxYear = true;
+                            updateComoBoxMonth = true;
+                            updateComoBoxDay = false;
+                        }
                     }
+
                 } catch (NumberFormatException ex) {
-                    System.out.println("Invalid number: " + text);
+                    System.out.println("Invalid date");
                 }
             }
-        });
+        }
+        );
 
         return panel;
     }
@@ -197,19 +241,19 @@ public class OHMDateFilterDialog extends ToggleDialog {
         // Crear los botones de radio
         JRadioButton startDateButton = new JRadioButton("start_date");
         JRadioButton endDateButton = new JRadioButton("end_date");
-        JRadioButton bothButton = new JRadioButton("both");
+        JRadioButton rangeButton = new JRadioButton("range");
 
         // Crear el ButtonGroup y agregar los botones de radio
         ButtonGroup group = new ButtonGroup();
         group.add(startDateButton);
         group.add(endDateButton);
-        group.add(bothButton);
-        bothButton.setSelected(true);
+        group.add(rangeButton);
+        startDateButton.setSelected(true);
 
         // Agregar los botones de radio al panel
         panel.add(startDateButton);
         panel.add(endDateButton);
-        panel.add(bothButton);
+        panel.add(rangeButton);
 
         // Agregar ActionListener a cada botón de radio
         startDateButton.addActionListener(new ActionListener() {
@@ -228,10 +272,10 @@ public class OHMDateFilterDialog extends ToggleDialog {
             }
         });
 
-        bothButton.addActionListener(new ActionListener() {
+        rangeButton.addActionListener(new ActionListener() {
             @Override
             public void actionPerformed(ActionEvent e) {
-                filter_by = "both";
+                filter_by = "range";
                 filterObjects();
             }
         });
@@ -247,39 +291,44 @@ public class OHMDateFilterDialog extends ToggleDialog {
         OHMDateFilterFunctions.applyDateFilter(searchSetting, false);
     }
 
-    private void setMinMaxYearForSlider(String datestr, int RangeValue) {
-        boolean isMonthValue = false;
-        if (datestr.contains("-")) {
-            isMonthValue = true;
-        }
+    private void setMinMaxValuesForSlider() {
         try {
 
-            // Conver string date to date format
-            String currentDate_str = UtilDates.formatDate(datestr);
-            dateHandler.setDate(currentDate_str);
-            int minRange = dateHandler.getDaysAfterAdjustingYears(-1 * RangeValue);
-            int maxRange = dateHandler.getDaysAfterAdjustingYears(RangeValue);
-            int minWindow = dateHandler.getDaysAfterAdjustingYears(0);
-            int maxWindow = dateHandler.getDaysAfterAdjustingYears(1);
+            int rangeValue = (int) UtilDates.getRangeValue(jComboBoxRange.getSelectedItem() + "");
 
-            if (isMonthValue) {
-                minRange = dateHandler.getDaysAfterAdjustingMonths(-1 * RangeValue);
-                maxRange = dateHandler.getDaysAfterAdjustingMonths(RangeValue);
-                minWindow = dateHandler.getDaysAfterAdjustingMonths(0);
-                maxWindow = dateHandler.getDaysAfterAdjustingMonths(1);
+            int minRange = 0;
+            int maxRange = 0;
+            int minWindow = 0;
+            int maxWindow = 0;
+
+            if ("year".equals(dateHandler.getFormat())) {
+                DateCompose minRangeYear = dateHandler.getRangeYear(-1 * rangeValue);
+                DateCompose maxWindowYear = dateHandler.getRangeYear(rangeValue);
+                DateCompose maxRangeYear = dateHandler.getRangeYear(rangeValue);
+                minWindow = dateHandler.getCurrentYearFromYearZero();
+                maxWindow = maxRangeYear.getNumValue();
+                minRange = minRangeYear.getNumValue();
+                maxRange = maxWindowYear.getNumValue();
+
+            } else if ("month".equals(dateHandler.getFormat())) {
+                DateCompose minRangeMonth = dateHandler.getRangeMonth(-1 * rangeValue);
+                DateCompose maxWindowMonth = dateHandler.getRangeMonth(rangeValue);
+                DateCompose maxRangeMonth = dateHandler.getRangeMonth(rangeValue);
+                minWindow = dateHandler.getCurrentMonthFromYearZero();
+                maxWindow = maxRangeMonth.getNumValue();
+                minRange = minRangeMonth.getNumValue();
+                maxRange = maxRangeMonth.getNumValue();
+
+            } else if ("day".equals(dateHandler.getFormat())) {
+                DateCompose minRangeDay = dateHandler.getRangeDays(-1 * rangeValue);
+                DateCompose maxWindowDay = dateHandler.getRangeDays(rangeValue);
+                DateCompose maxRangeDay = dateHandler.getRangeDays(rangeValue);
+                minWindow = dateHandler.getCurrentDaysFromYearZero();
+                maxWindow = maxWindowDay.getNumValue();
+                minRange = minRangeDay.getNumValue();
+                maxRange = maxRangeDay.getNumValue();
+
             }
-
-            if (minRange < 0 || maxRange < 0 || minWindow < 0 || maxWindow < 0) {
-                HelpAwareOptionPane.showMessageDialogInEDT(
-                        MainApplication.getMainFrame(),
-                        "Wrong date: " + currentDate_str,
-                        tr("Warning"),
-                        JOptionPane.WARNING_MESSAGE,
-                        ht("/Action/Open#MissingImporterForFiles")
-                );
-                return;
-            }
-
             // Fill range
             rangeSlider.setMinimum(minRange);
             rangeSlider.setMaximum(maxRange);
@@ -291,16 +340,17 @@ public class OHMDateFilterDialog extends ToggleDialog {
         }
     }
 
-    private String getSearchFormat(int start_num_days, int end_num_days) {
-        String start_date_str = dateHandler.getDateFromDaysSinceYearZero(start_num_days);
-        String end_date_str = dateHandler.getDateFromDaysSinceYearZero(end_num_days - 1);
+    private String getSearchFormat(int start_num, int end_num) {
+        String start_date_str = dateHandler.getFormattedDateString(start_num);
+        String end_date_str = dateHandler.getFormattedDateString(end_num);
         String filter_values = "";
-        if (filter_by == "both") {
+
+        if (filter_by == "range") {
             filter_values = "start_date>" + start_date_str + " AND end_date<" + end_date_str;
         } else if (filter_by == "end_date") {
-            filter_values = "end_date<" + end_date_str;
+            filter_values = "end_date=" + start_date_str;
         } else if (filter_by == "start_date") {
-            filter_values = "start_date>" + start_date_str;
+            filter_values = "start_date=" + start_date_str;
         }
         return filter_values;
     }

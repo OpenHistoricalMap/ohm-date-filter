@@ -1,4 +1,5 @@
 package org.openstreetmap.josm.plugins.ohmdatefilter;
+
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -30,13 +31,28 @@ public class UtilDates {
             return String.format("%04d", year);
         }
     }
-    
-      public static int getRangeValue(String selectedItem) {
+
+    public static int getRangeValue(String selectedItem) {
         Pattern pattern = Pattern.compile("\\d+");
         Matcher matcher = pattern.matcher(selectedItem);
         if (matcher.find()) {
             return Integer.parseInt(matcher.group());
         }
         throw new IllegalArgumentException("No numerical value found in the selected item");
+    }
+
+    public static String isDateFormat(String dateString) {
+        String[] parts = dateString.split("-");
+
+        switch (parts.length) {
+            case 1:
+                return "year";
+            case 2:
+                return "month";
+            case 3:
+                return "day";
+            default:
+                return "Invalid date format";
+        }
     }
 }

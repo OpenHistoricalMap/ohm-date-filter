@@ -3,11 +3,44 @@ package org.openstreetmap.josm.plugins.ohmdatefilter;
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
 import java.time.format.DateTimeParseException;
+import java.time.temporal.ChronoUnit;
+
+class DateCompose {
+
+    private String dateString;
+    private int numValue;
+
+    public DateCompose(String dateString, int daysFromYearZero) {
+        this.dateString = dateString;
+        this.numValue = daysFromYearZero;
+    }
+
+    public String getDateString() {
+        return dateString;
+    }
+
+    public int getNumValue() {
+        return numValue;
+    }
+
+    @Override
+    public String toString() {
+        String val = "DateCompose{"
+                + "dateString='" + dateString + '\''
+                + ", numValue=" + numValue
+                + '}';
+        System.out.println(val);
+        return val;
+    }
+
+}
 
 public class DateHandler {
 
     private LocalDate date;
+    private String str_date;
     private static final DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd");
+    private String format;
 
     public DateHandler() {
     }
@@ -17,12 +50,17 @@ public class DateHandler {
     }
 
     public void setDate(String dateString) {
-        if (dateString.matches("\\d{4}")) {
-            dateString += "-01-01"; 
-        } else if (dateString.matches("\\d{4}-\\d{2}")) {
-            dateString += "-01";
-        }
+        this.str_date = dateString;
 
+        if (dateString.matches("\\d{4}")) {
+            this.format = "year";
+            dateString += "-01-01";
+        } else if (dateString.matches("\\d{4}-\\d{2}")) {
+            this.format = "month";
+            dateString += "-01";
+        } else if (dateString.matches("\\d{4}-\\d{2}-\\d{2}")) {
+            this.format = "day";
+        }
         try {
             this.date = LocalDate.parse(dateString, formatter);
         } catch (DateTimeParseException e) {
@@ -35,63 +73,105 @@ public class DateHandler {
         if (this.date != null) {
             return this.date.format(formatter);
         } else {
-            return "Invalid date.";
+            return null;
         }
     }
 
-    public int getDaysSinceYearZero() {
+    public int getCurrentYearFromYearZero() {
         if (this.date != null) {
             LocalDate yearZero = LocalDate.of(0, 1, 1);
-            return (int) (this.date.toEpochDay() - yearZero.toEpochDay());
-        } else {
-            System.out.println("Invalid date.");
-            return -1;
+            return (int) ChronoUnit.YEARS.between(yearZero, this.date);
         }
+        return 0;
     }
 
-    public int getDaysAfterAdjustingYears(int years) {
+    public DateCompose getRangeYear(int value) {
+        if ("year".equals(this.format) && this.date != null) {
+            LocalDate targetDate;
+            if (value >= 0) {
+                targetDate = this.date.plusYears(value);
+            } else {
+                targetDate = this.date.minusYears(Math.abs(value));
+            }
+            long yearsFromYearZero = ChronoUnit.YEARS.between(LocalDate.of(0, 1, 1), targetDate);
+            DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy");
+            return new DateCompose(targetDate.format(formatter), (int) yearsFromYearZero);
+        }
+        return new DateCompose("", 0);
+    }
+
+    public int getCurrentMonthFromYearZero() {
         if (this.date != null) {
-            LocalDate adjustedDate = (years > 0) ? this.date.plusYears(years) : this.date.minusYears(-years);
-            return (int) (adjustedDate.toEpochDay() - LocalDate.of(0, 1, 1).toEpochDay());
-        } else {
-            System.out.println("Invalid date.");
-            return -1;
+            LocalDate yearZero = LocalDate.of(0, 1, 1);
+            return (int) ChronoUnit.MONTHS.between(yearZero, this.date);
         }
+        return 0;
     }
 
-    public String getDateAfterAdjustingYears(int years) {
+    public int getMonthsSinceYearZero(LocalDate date) {
+        LocalDate startDate = LocalDate.of(0, 1, 1);
+        return (int) ChronoUnit.MONTHS.between(startDate, date);
+    }
+
+    public DateCompose getRangeMonth(int months) {
+        if ("month".equals(this.format) && this.date != null) {
+            LocalDate targetDate;
+            if (months < 0) {
+                targetDate = this.date.minusMonths(Math.abs(months));
+            } else {
+                targetDate = this.date.plusMonths(months);
+            }
+            long monthsFromYearZero = ChronoUnit.MONTHS.between(LocalDate.of(0, 1, 1), targetDate);
+            DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM");
+
+            return new DateCompose(targetDate.format(formatter), (int) monthsFromYearZero);
+        }
+        return new DateCompose("", 0);
+    }
+
+    public DateCompose getRangeDays(int days) {
         if (this.date != null) {
-            LocalDate adjustedDate = (years > 0) ? this.date.plusYears(years) : this.date.minusYears(-years);
-            return adjustedDate.format(formatter);
-        } else {
-            System.out.println("Invalid date.");
-            return "Invalid date.";
+            LocalDate targetDate;
+            if (days >= 0) {
+                targetDate = this.date.plusDays(days);
+            } else {
+                targetDate = this.date.minusDays(Math.abs(days));
+            }
+            long daysFromYearZero = ChronoUnit.DAYS.between(LocalDate.of(0, 1, 1), targetDate);
+            return new DateCompose(targetDate.toString(), (int) daysFromYearZero);
         }
+        return new DateCompose("", 0);
     }
 
-    public int getDaysAfterAdjustingMonths(int months) {
+    public int getCurrentDaysFromYearZero() {
         if (this.date != null) {
-            LocalDate adjustedDate = (months > 0) ? this.date.plusMonths(months) : this.date.minusMonths(-months);
-            return (int) (adjustedDate.toEpochDay() - LocalDate.of(0, 1, 1).toEpochDay());
-        } else {
-            System.out.println("Invalid date.");
-            return -1;
+            LocalDate yearZero = LocalDate.of(0, 1, 1);
+            return (int) ChronoUnit.DAYS.between(yearZero, this.date);
         }
+        return 0;
     }
 
-    public String getDateAfterAdjustingMonths(int months) {
-        if (this.date != null) {
-            LocalDate adjustedDate = (months > 0) ? this.date.plusMonths(months) : this.date.minusMonths(-months);
-            return adjustedDate.format(formatter);
-        } else {
-            System.out.println("Invalid date.");
-            return "Invalid date.";
-        }
+    public String getFormat() {
+        return this.format;
     }
 
-    public String getDateFromDaysSinceYearZero(int days) {
-        LocalDate yearZero = LocalDate.of(0, 1, 1);
-        LocalDate targetDate = yearZero.plusDays(days);
+    public String getFormattedDateString(int value) {
+        LocalDate targetDate = LocalDate.of(0, 1, 1);
+        DateTimeFormatter formatter;
+
+        if ("year".equals(this.format)) {
+            targetDate = targetDate.plusYears(value);
+            formatter = DateTimeFormatter.ofPattern("yyyy");
+        } else if ("month".equals(this.format)) {
+            targetDate = targetDate.plusMonths(value);
+            formatter = DateTimeFormatter.ofPattern("yyyy-MM");
+        } else if ("day".equals(this.format)) {
+            targetDate = targetDate.plusDays(value);
+            formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd");
+        } else {
+            return "";
+        }
+
         return targetDate.format(formatter);
     }
 }
