@@ -51,20 +51,28 @@ public class DateHandler {
 
     public void setDate(String dateString) {
         this.str_date = dateString;
+        DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd");
 
-        if (dateString.matches("\\d{4}")) {
+        if (dateString.matches("\\d{1,4}")) {
             this.format = "year";
-            dateString += "-01-01";
-        } else if (dateString.matches("\\d{4}-\\d{2}")) {
+            dateString = String.format("%04d-01-01", Integer.parseInt(dateString));
+        } else if (dateString.matches("\\d{1,4}-\\d{1,2}")) {
             this.format = "month";
-            dateString += "-01";
-        } else if (dateString.matches("\\d{4}-\\d{2}-\\d{2}")) {
+            String[] parts = dateString.split("-");
+            dateString = String.format("%04d-%02d-01", Integer.parseInt(parts[0]), Integer.parseInt(parts[1]));
+        } else if (dateString.matches("\\d{1,4}-\\d{1,2}-\\d{1,2}")) {
             this.format = "day";
+            String[] parts = dateString.split("-");
+            dateString = String.format("%04d-%02d-%02d", Integer.parseInt(parts[0]), Integer.parseInt(parts[1]), Integer.parseInt(parts[2]));
+        } else {
+            this.date = null;
+            return;
         }
+
         try {
             this.date = LocalDate.parse(dateString, formatter);
         } catch (DateTimeParseException e) {
-            System.out.println("Error: Format should be 'yyyy-MM-dd'.");
+            System.out.println("Error: Invalid date format.");
             this.date = null;
         }
     }

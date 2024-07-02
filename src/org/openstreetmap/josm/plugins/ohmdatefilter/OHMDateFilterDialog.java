@@ -123,24 +123,21 @@ public class OHMDateFilterDialog extends ToggleDialog {
 
                 if (input_date != null && !input_date.isEmpty()) {
                     dateHandler.setDate(input_date);
-                    if (dateHandler.getDate() != null) {
-                        setMinMaxValuesForSlider();
-
-                    } else {
+                    if (dateHandler.getDate() == null) {
                         HelpAwareOptionPane.showMessageDialogInEDT(
                                 MainApplication.getMainFrame(),
                                 "Wrong date: " + input_date,
                                 tr("Warning"),
                                 JOptionPane.WARNING_MESSAGE,
-                                ht("/Action/Open#MissingImporterForFiles")
+                                null
                         );
+                        return;
                     }
+
+                    setMinMaxValuesForSlider();
                 }
             }
 
-            private String ht(String actionOpenMissingImporterForFiles) {
-                throw new UnsupportedOperationException("Not supported yet."); // Generated from nbfs://nbhost/SystemFileSystem/Templates/Classes/Code/GeneratedMethodBody
-            }
         });
 
         jTextFieldInputDate.getDocument().addDocumentListener(new DocumentListener() {
