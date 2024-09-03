@@ -18,7 +18,7 @@ public class OHMDateFilterFunctions {
      *
      * @param searchSetting The search settings including the date range.
      */
-    public static void applyDateFilter(SearchSetting searchSetting, boolean saveFilter) {
+    public static void applyDateFilter(SearchSetting searchSetting_start_date, SearchSetting searchSetting_end_date, boolean saveFilter, boolean resetFilters) {
 
         DataSet currentDataSet = getCurrentDataSet();
         if (currentDataSet == null) {
@@ -27,23 +27,47 @@ public class OHMDateFilterFunctions {
         }
 
         try {
+                        System.out.println(searchSetting_start_date.text);
+                        System.out.println(searchSetting_end_date.text);
+
             // Validate searchSetting
-            SearchCompiler.compile(searchSetting);
-            // Create filter
-            Filter filter = new Filter();
-            filter.text = searchSetting.text;
-            filter.caseSensitive = searchSetting.caseSensitive;
-            filter.regexSearch = searchSetting.regexSearch;
-            filter.mapCSSSearch = searchSetting.mapCSSSearch;
-            filter.allElements = searchSetting.allElements;
-            filter.inverted = true;
+            SearchCompiler.compile(searchSetting_start_date);
+            SearchCompiler.compile(searchSetting_end_date);
+
+            // Create filter for start date
+            Filter filter_start_date = new Filter();
+            filter_start_date.text = searchSetting_start_date.text;
+            filter_start_date.caseSensitive = searchSetting_start_date.caseSensitive;
+            filter_start_date.regexSearch = searchSetting_start_date.regexSearch;
+            filter_start_date.mapCSSSearch = searchSetting_start_date.mapCSSSearch;
+            filter_start_date.allElements = searchSetting_start_date.allElements;
+            filter_start_date.inverted = true;
+
+            // Create filter for end date
+            Filter filter_end_date = new Filter();
+            filter_end_date.text = searchSetting_end_date.text;
+            filter_end_date.caseSensitive = searchSetting_end_date.caseSensitive;
+            filter_end_date.regexSearch = searchSetting_end_date.regexSearch;
+            filter_end_date.mapCSSSearch = searchSetting_end_date.mapCSSSearch;
+            filter_end_date.allElements = searchSetting_end_date.allElements;
+            filter_end_date.inverted = false;
+            
+            // Create filter for reset
+            Filter filter_reset= new Filter();
+            filter_reset.text = "";
+            filter_reset.caseSensitive = searchSetting_start_date.caseSensitive;
+            filter_reset.regexSearch = searchSetting_start_date.regexSearch;
+            filter_reset.mapCSSSearch = searchSetting_start_date.mapCSSSearch;
+            filter_reset.allElements = searchSetting_start_date.allElements;
+            filter_reset.inverted = true;
 
             if (saveFilter) {
                 // Save filter in filer window
-                // Get filterDialog and apply filter
                 FilterDialog filterDialog = MainApplication.getMap().filterDialog;
                 FilterTableModel filterModel = filterDialog.getFilterModel();
-                filterModel.addFilter(filter);
+                filterModel.addFilter(filter_start_date);
+                filterModel.addFilter(filter_end_date);
+
                 filterModel.executeFilters();
                 // Update Filters
                 filterDialog.setVisible(true);
@@ -51,7 +75,15 @@ public class OHMDateFilterFunctions {
             } else {
                 // Just apply filter in the map
                 FilterModel filterModel = new FilterModel();
-                filterModel.addFilter(filter);
+                filterModel.addFilter(filter_start_date);
+                filterModel.addFilter(filter_end_date);
+                filterModel.executeFilters();
+            }
+
+            if (resetFilters) {
+                // Reset
+                FilterModel filterModel = new FilterModel();
+                filterModel.addFilter(filter_reset);
                 filterModel.executeFilters();
             }
 
