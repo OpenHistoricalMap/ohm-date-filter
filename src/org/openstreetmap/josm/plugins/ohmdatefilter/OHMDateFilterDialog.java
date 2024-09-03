@@ -3,38 +3,32 @@ package org.openstreetmap.josm.plugins.ohmdatefilter;
 import java.awt.Color;
 import java.awt.Dimension;
 import java.awt.Font;
-import java.awt.Graphics;
 import java.awt.GridBagConstraints;
 import java.awt.GridBagLayout;
 import static org.openstreetmap.josm.tools.I18n.tr;
 
 import java.awt.GridLayout;
-import java.awt.Insets;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.awt.event.KeyEvent;
+import java.time.LocalDate;
+import java.time.format.DateTimeFormatter;
+import java.time.format.DateTimeParseException;
 import java.util.Arrays;
 import javax.swing.BorderFactory;
-import javax.swing.ButtonGroup;
 import javax.swing.JButton;
 
 import javax.swing.JPanel;
 import javax.swing.JTextField;
 import javax.swing.JComboBox;
 import javax.swing.JLabel;
-import javax.swing.JOptionPane;
-import javax.swing.JRadioButton;
 import javax.swing.JSlider;
 import javax.swing.border.TitledBorder;
 
-import javax.swing.event.ChangeEvent;
-import javax.swing.event.ChangeListener;
-import javax.swing.event.DocumentEvent;
-import javax.swing.event.DocumentListener;
 import org.openstreetmap.josm.actions.JosmAction;
 import org.openstreetmap.josm.data.osm.search.SearchSetting;
+import javax.swing.JOptionPane;
 import org.openstreetmap.josm.gui.HelpAwareOptionPane;
-import org.openstreetmap.josm.gui.MainApplication;
 
 import org.openstreetmap.josm.gui.SideButton;
 import org.openstreetmap.josm.gui.dialogs.ToggleDialog;
@@ -42,17 +36,6 @@ import org.openstreetmap.josm.tools.Shortcut;
 
 public class OHMDateFilterDialog extends ToggleDialog {
 
-//    String[] listYears = new String[]{"2 years", "5 years", "10 years", "50 years", "100 years", "200 years", "500 years"};
-//    String[] listMonths = new String[]{"2 Month", "6 Months", "12 Months", "24 Months"};
-//    String[] listDays = new String[]{"1 Days", "5 days", "10 days"};
-//
-//    Boolean updateComoBoxYear = false;
-//    Boolean updateComoBoxMonth = true;
-//    Boolean updateComoBoxDay = true;
-//
-//    String filter_by = "start_date";
-//    int current_lower_value = 0;
-//    int current_upper_value = 0;
     DateHandler dateHandler = new DateHandler();
     private JTextField jTextFieldStartDate = new JTextField();
     private JTextField jTextFieldEndDate = new JTextField();
@@ -64,14 +47,13 @@ public class OHMDateFilterDialog extends ToggleDialog {
     private JSlider jSliderDate = new JSlider(JSlider.HORIZONTAL);
 
     private JTextField jTextSettings = new JTextField();
-    private JComboBox jComboBoxRange = new JComboBox<>();
 
     public OHMDateFilterDialog() {
         super(tr("OpenHistoricalMap Date Filter"),
                 "iconohmdatefilter16",
                 tr("Open OpenHistoricalMap date filter window"),
                 Shortcut.registerShortcut("ohmDateFilter", tr("Toggle: {0}", tr("OpenHistoricalMap Date Filter")), KeyEvent.VK_I,
-                        Shortcut.ALT_CTRL_SHIFT), 250);
+                        Shortcut.ALT_CTRL_SHIFT), 130);
 
         JosmAction oHMActionSaver = new JosmAction(
                 tr("Save Filter"), "save",
@@ -99,16 +81,15 @@ public class OHMDateFilterDialog extends ToggleDialog {
         SideButton sideButtonReset = new SideButton(oHMActionReset);
 
         //Main panel
-        JPanel mainPanel = new JPanel(new GridLayout(3, 1));
-        mainPanel.setMinimumSize(new Dimension(500, 30));
+        JPanel mainPanel = new JPanel(new GridLayout(2, 1));
+        mainPanel.setMinimumSize(new Dimension(130, 30));
 
         //Add panels 
         mainPanel.add(imputDatePanel());
 
         mainPanel.add(dateSliderPanel());
 
-        mainPanel.add(jTextSearchFormat);
-
+//        mainPanel.add(jTextSearchFormat);
         createLayout(mainPanel, false, Arrays.asList(sideButtonSaveFilter, sideButtonReset));
     }
 
@@ -134,11 +115,18 @@ public class OHMDateFilterDialog extends ToggleDialog {
                 System.out.println(inputEndDate);
 
                 if (inputStartDate != null && !inputStartDate.isEmpty() && inputEndDate != null && !inputEndDate.isEmpty()) {
-                    dateHandler.setStartDateString(inputStartDate);
-                    dateHandler.setEndDateString(inputEndDate);
-                    jSliderDate.setMinimum(0);
-                    jSliderDate.setValue(0);
-                    jSliderDate.setMaximum(dateHandler.getRangeInDays());
+
+                    String fixedInputStartDate = formatDateString(inputStartDate, true);
+                    String fixedInputEndDate = formatDateString(inputEndDate, false);
+                    System.out.println(fixedInputStartDate);
+                    System.out.println(fixedInputEndDate);
+                    if (fixedInputStartDate != null && fixedInputEndDate != null) {
+                        dateHandler.setStartDateString(fixedInputStartDate);
+                        dateHandler.setEndDateString(fixedInputEndDate);
+                        jSliderDate.setMinimum(0);
+                        jSliderDate.setValue(0);
+                        jSliderDate.setMaximum(dateHandler.getRangeInDays());
+                    }
                 }
             }
 
@@ -213,6 +201,43 @@ public class OHMDateFilterDialog extends ToggleDialog {
         border.setTitleColor(Color.decode("#337AFF"));
         border.setTitleFont(border.getTitleFont().deriveFont(Font.BOLD));
         return border;
+    }
+
+    public String formatDateString(String dateString, boolean startDate) {
+        DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd");
+
+        // Check the format of the date string and complete it to 'yyyy-MM-dd'
+        if (dateString.matches("\\d{4}")) {  // Only year
+            dateString += "-01-01";  // Complete to 'yyyy-01-01'
+        } else if (dateString.matches("\\d{4}-\\d{2}")) {  // Year and month
+            dateString += "-01";  // Complete to 'yyyy-MM-01'
+        }
+
+        try {
+            // Parse the completed date string to LocalDate
+            LocalDate date = LocalDate.parse(dateString, formatter);
+        } catch (DateTimeParseException e) {
+            System.out.println("Error: Format should be 'yyyy-MM-dd'.");
+
+            String message = "";
+            if (startDate) {
+                message = "Set a valid start_date in valid format yyyy-MM-dd";
+            } else {
+                message = "Set a valid end_date in valid format yyyy-MM-dd";
+
+            }
+
+            HelpAwareOptionPane.showOptionDialog(
+                    null,
+                    message,
+                    "Date Issue",
+                    JOptionPane.WARNING_MESSAGE,
+                    null
+            );
+            return null;
+        }
+
+        return dateString;
     }
 
 }

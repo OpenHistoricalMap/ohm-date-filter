@@ -20,48 +20,43 @@ public class DateHandler {
     public DateHandler() {
     }
 
-    public DateHandler(String startDateString, String endDateString) {
-        this.startDateString = startDateString;
-        this.endDateString = endDateString;
-        this.startDate = getDateFromString(startDateString);
-        this.endDate = getDateFromString(endDateString);
-    }
+//    public DateHandler(String startDateString, String endDateString) {
+//        this.startDateString = startDateString;
+//        this.endDateString = endDateString;
+//        this.startDate = getDateFromString(startDateString);
+//        this.endDate = getDateFromString(endDateString);
+//    }
 
     public void setStartDateString(String startDateString) {
         this.startDateString = startDateString;
-        this.startDate = getDateFromString(startDateString);
+//        this.startDate = getDateFromString(startDateString);
+        this.startDate = LocalDate.parse(startDateString, formatter);
 
     }
 
     public void setEndDateString(String endDateString) {
         this.endDateString = endDateString;
-        this.endDate = getDateFromString(endDateString);
-
+        this.endDate = LocalDate.parse(endDateString, formatter);
+//        this.endDate = getDateFromString(endDateString);
     }
 
-    public LocalDate getDateFromString(String dateString) {
-        LocalDate date = null;
+    public LocalDate getStartDate() {
+        System.out.println("===");
 
-        // Check the format of the date string and complete it to 'yyyy-MM-dd'
-        if (dateString.matches("\\d{4}")) {  // Only year
-            dateString += "-01-01";  // Complete to 'yyyy-01-01'
-        } else if (dateString.matches("\\d{4}-\\d{2}")) {  // Year and month
-            dateString += "-01";  // Complete to 'yyyy-MM-01'
-        } else if (!dateString.matches("\\d{4}-\\d{2}-\\d{2}")) {  // Invalid format
-            System.out.println("Error: Format should be 'yyyy', 'yyyy-MM', or 'yyyy-MM-dd'.");
-            return null;  // Return null for invalid formats
-        }
+        System.out.println(this.startDate);
 
-        try {
-            // Parse the completed date string to LocalDate
-            date = LocalDate.parse(dateString, formatter);
-        } catch (DateTimeParseException e) {
-            System.out.println("Error: Format should be 'yyyy-MM-dd'.");
-            return null;
-        }
-
-        return date;
+        return this.startDate;
     }
+
+    public LocalDate getEndDate() {
+        System.out.println("----");
+
+        System.out.println(this.endDate);
+
+        return this.endDate;
+    }
+
+  
 
     public int getRangeInDays() {
         if (this.startDate != null && this.endDate != null) {
