@@ -27,9 +27,6 @@ public class OHMDateFilterFunctions {
         }
 
         try {
-                        System.out.println(searchSetting_start_date.text);
-                        System.out.println(searchSetting_end_date.text);
-
             // Validate searchSetting
             SearchCompiler.compile(searchSetting_start_date);
             SearchCompiler.compile(searchSetting_end_date);
@@ -41,7 +38,12 @@ public class OHMDateFilterFunctions {
             filter_start_date.regexSearch = searchSetting_start_date.regexSearch;
             filter_start_date.mapCSSSearch = searchSetting_start_date.mapCSSSearch;
             filter_start_date.allElements = searchSetting_start_date.allElements;
-            filter_start_date.inverted = true;
+            filter_start_date.inverted = false;
+
+            // Exist start_date
+            Filter filter_start_date_exist = new Filter();
+            filter_start_date_exist.text = "start_date";
+            filter_start_date_exist.inverted = true;
 
             // Create filter for end date
             Filter filter_end_date = new Filter();
@@ -51,9 +53,14 @@ public class OHMDateFilterFunctions {
             filter_end_date.mapCSSSearch = searchSetting_end_date.mapCSSSearch;
             filter_end_date.allElements = searchSetting_end_date.allElements;
             filter_end_date.inverted = false;
-            
+
+            //Exist end_date
+            Filter filter_end_date_exist = new Filter();
+            filter_end_date_exist.text = "end_date";
+            filter_end_date_exist.inverted = true;
+
             // Create filter for reset
-            Filter filter_reset= new Filter();
+            Filter filter_reset = new Filter();
             filter_reset.text = "";
             filter_reset.caseSensitive = searchSetting_start_date.caseSensitive;
             filter_reset.regexSearch = searchSetting_start_date.regexSearch;
@@ -65,6 +72,9 @@ public class OHMDateFilterFunctions {
                 // Save filter in filer window
                 FilterDialog filterDialog = MainApplication.getMap().filterDialog;
                 FilterTableModel filterModel = filterDialog.getFilterModel();
+
+                filterModel.addFilter(filter_start_date_exist);
+                filterModel.addFilter(filter_end_date_exist);
                 filterModel.addFilter(filter_start_date);
                 filterModel.addFilter(filter_end_date);
 
@@ -75,6 +85,8 @@ public class OHMDateFilterFunctions {
             } else {
                 // Just apply filter in the map
                 FilterModel filterModel = new FilterModel();
+                filterModel.addFilter(filter_start_date_exist);
+                filterModel.addFilter(filter_end_date_exist);
                 filterModel.addFilter(filter_start_date);
                 filterModel.addFilter(filter_end_date);
                 filterModel.executeFilters();

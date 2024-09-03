@@ -64,7 +64,6 @@ public class OHMDateFilterDialog extends ToggleDialog {
     private JSlider jSliderDate = new JSlider(JSlider.HORIZONTAL);
 
     private JTextField jTextSettings = new JTextField();
-    private RangeSlider rangeSlider = new RangeSlider();
     private JComboBox jComboBoxRange = new JComboBox<>();
 
     public OHMDateFilterDialog() {
@@ -149,10 +148,7 @@ public class OHMDateFilterDialog extends ToggleDialog {
     }
 
     private JPanel dateSliderPanel() {
-//        jSliderDate.setForeground(Color.RED);
-//        jSliderDate.setBackground(Color.GREEN);
         sliderPanel.setBorder(titlePanel("Date"));
-
         jSliderDate.setPreferredSize(new Dimension(300, 50));
         jSliderDate.addChangeListener(e -> {
             filterMapData(false, false);
@@ -188,13 +184,18 @@ public class OHMDateFilterDialog extends ToggleDialog {
     }
 
     private String getSearchFormat(String currentDate, boolean start_date) {
-//        String filter_values = "(child(type:relation start_date>\"" + currentDate + "\") OR start_date>\"" + currentDate + "\")"
-//                + " AND (child(type:relation end_date<\"" + currentDate + "\") OR end_date<\"" + currentDate + "\")";
+
         if (start_date) {
-            return "start_date>\"" + currentDate + "\"";
+            return "child(type:relation start_date>\"" + currentDate + "\") OR start_date>\"" + currentDate + "\"";
         } else {
-            return "end_date<\"" + currentDate + "\"";
+            return "child(type:relation end _date<\"" + currentDate + "\") OR end_date<\"" + currentDate + "\"";
         }
+
+//        if (start_date) {
+//            return "start_date>\"" + currentDate + "\"";
+//        } else {
+//            return "end_date<\"" + currentDate + "\"";
+//        }
     }
 
     private SearchSetting getSearchSetting(String searchFormat) {
