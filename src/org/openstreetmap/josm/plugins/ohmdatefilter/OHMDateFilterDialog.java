@@ -2,6 +2,7 @@ package org.openstreetmap.josm.plugins.ohmdatefilter;
 
 import java.awt.Color;
 import java.awt.Dimension;
+import java.awt.FlowLayout;
 import java.awt.Font;
 import java.awt.GridBagConstraints;
 import java.awt.GridBagLayout;
@@ -17,6 +18,7 @@ import java.time.format.DateTimeParseException;
 import java.util.Arrays;
 import javax.swing.BorderFactory;
 import javax.swing.JButton;
+import javax.swing.JCheckBox;
 
 import javax.swing.JPanel;
 import javax.swing.JTextField;
@@ -37,10 +39,13 @@ import org.openstreetmap.josm.tools.Shortcut;
 public class OHMDateFilterDialog extends ToggleDialog {
 
     DateHandler dateHandler = new DateHandler();
-    private JTextField jTextFieldStartDate = new JTextField();
-    private JTextField jTextFieldEndDate = new JTextField();
+    private JTextField jTextFieldStartDate = new JTextField("1890");
+    private JTextField jTextFieldEndDate = new JTextField("1950");
     private JLabel jLabelCurrentDate = new JLabel();
     private JTextField jTextSearchFormat = new JTextField();
+    // Checkboxes
+    private JCheckBox jcheckbox_start_date_null = new JCheckBox("start_date=*", true); // Start as true
+    private JCheckBox jcheckbox_end_date_null = new JCheckBox("end_date=*", true);     // Start as true
 
     // Slider
     JPanel sliderPanel = new JPanel(new GridBagLayout());
@@ -85,15 +90,15 @@ public class OHMDateFilterDialog extends ToggleDialog {
         mainPanel.setMinimumSize(new Dimension(130, 30));
 
         //Add panels 
-        mainPanel.add(imputDatePanel());
+        mainPanel.add(inputDatePanel());
+//        mainPanel.add(checkDatesPanel());
 
         mainPanel.add(dateSliderPanel());
 
-//        mainPanel.add(jTextSearchFormat);
         createLayout(mainPanel, false, Arrays.asList(sideButtonSaveFilter, sideButtonReset));
     }
 
-    private JPanel imputDatePanel() {
+    private JPanel inputDatePanel() {
         // Imput panel to add initial date
         JPanel panel = new JPanel(new GridLayout(1, 3));
         panel.setBorder(javax.swing.BorderFactory.createTitledBorder("Set Date and Range value"));
@@ -118,8 +123,8 @@ public class OHMDateFilterDialog extends ToggleDialog {
 
                     String fixedInputStartDate = formatDateString(inputStartDate, true);
                     String fixedInputEndDate = formatDateString(inputEndDate, false);
-                    System.out.println(fixedInputStartDate);
-                    System.out.println(fixedInputEndDate);
+//                    System.out.println(fixedInputStartDate);
+//                    System.out.println(fixedInputEndDate);
                     if (fixedInputStartDate != null && fixedInputEndDate != null) {
                         dateHandler.setStartDateString(fixedInputStartDate);
                         dateHandler.setEndDateString(fixedInputEndDate);
@@ -131,6 +136,17 @@ public class OHMDateFilterDialog extends ToggleDialog {
             }
 
         });
+
+        return panel;
+    }
+
+    private JPanel checkDatesPanel() {
+        // Create a panel with a titled border "Include"
+        JPanel panel = new JPanel(new FlowLayout(FlowLayout.LEFT));
+        panel.setBorder(BorderFactory.createTitledBorder("Include existing values"));
+        // Add checkboxes to the panel, arranged horizontally
+        panel.add(jcheckbox_start_date_null);
+        panel.add(jcheckbox_end_date_null);
 
         return panel;
     }
@@ -157,18 +173,21 @@ public class OHMDateFilterDialog extends ToggleDialog {
         int currentValue = jSliderDate.getValue();
         String currentDateString = dateHandler.addDaysToStartDate(currentValue);
         // Set date in the panel title
-        sliderPanel.setBorder(titlePanel(currentDateString));
-        System.out.println("Current slider value: " + currentValue + "<>" + currentDateString);
+        sliderPanel.setBorder(titlePanel("start_date > " + currentDateString + " AND end_date < " + currentDateString));
+//        System.out.println("Current slider value: " + currentValue + "<>" + currentDateString);
+
         String searchFormat_start_date = getSearchFormat(currentDateString, true);
         String searchFormat_end_date = getSearchFormat(currentDateString, false);
-        jTextSearchFormat.setText(searchFormat_start_date + "---AND---" + searchFormat_end_date);
 
         // Convert searchFormat into searchSetting
         SearchSetting searchSetting_start_date = getSearchSetting(searchFormat_start_date);
         SearchSetting searchSetting_end_date = getSearchSetting(searchFormat_end_date);
 
-        // Apply filter
-        OHMDateFilterFunctions.applyDateFilter(searchSetting_start_date, searchSetting_end_date, saveFilter, resetFilters);
+        // Include 
+        boolean include_start_date_null = jcheckbox_start_date_null.isSelected();
+        boolean include_end_date_null = jcheckbox_end_date_null.isSelected();
+
+        OHMDateFilterFunctions.applyDateFilter(searchSetting_start_date, searchSetting_end_date, saveFilter, resetFilters, include_start_date_null,include_end_date_null);
     }
 
     private String getSearchFormat(String currentDate, boolean start_date) {

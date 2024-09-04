@@ -18,7 +18,7 @@ public class OHMDateFilterFunctions {
      *
      * @param searchSetting The search settings including the date range.
      */
-    public static void applyDateFilter(SearchSetting searchSetting_start_date, SearchSetting searchSetting_end_date, boolean saveFilter, boolean resetFilters) {
+    public static void applyDateFilter(SearchSetting searchSetting_start_date, SearchSetting searchSetting_end_date, boolean saveFilter, boolean resetFilters, boolean include_start_date_null, boolean include_end_date_null) {
 
         DataSet currentDataSet = getCurrentDataSet();
         if (currentDataSet == null) {
@@ -42,7 +42,7 @@ public class OHMDateFilterFunctions {
 
             // Exist start_date
             Filter filter_start_date_exist = new Filter();
-            filter_start_date_exist.text = "start_date";
+            filter_start_date_exist.text = "start_date=*";
             filter_start_date_exist.inverted = true;
 
             // Create filter for end date
@@ -56,7 +56,7 @@ public class OHMDateFilterFunctions {
 
             //Exist end_date
             Filter filter_end_date_exist = new Filter();
-            filter_end_date_exist.text = "end_date";
+            filter_end_date_exist.text = "end_date=*";
             filter_end_date_exist.inverted = true;
 
             // Create filter for reset
@@ -73,8 +73,14 @@ public class OHMDateFilterFunctions {
                 FilterDialog filterDialog = MainApplication.getMap().filterDialog;
                 FilterTableModel filterModel = filterDialog.getFilterModel();
 
-                filterModel.addFilter(filter_start_date_exist);
-                filterModel.addFilter(filter_end_date_exist);
+                if (include_start_date_null) {
+                    filterModel.addFilter(filter_start_date_exist);
+
+                }
+                if (include_end_date_null) {
+                    filterModel.addFilter(filter_end_date_exist);
+                }
+
                 filterModel.addFilter(filter_start_date);
                 filterModel.addFilter(filter_end_date);
 
@@ -85,10 +91,15 @@ public class OHMDateFilterFunctions {
             } else {
                 // Just apply filter in the map
                 FilterModel filterModel = new FilterModel();
-                filterModel.addFilter(filter_start_date_exist);
-                filterModel.addFilter(filter_end_date_exist);
+                if (include_start_date_null) {
+                    filterModel.addFilter(filter_start_date_exist);
+                }
+                if (include_end_date_null) {
+                    filterModel.addFilter(filter_end_date_exist);
+                }
                 filterModel.addFilter(filter_start_date);
                 filterModel.addFilter(filter_end_date);
+
                 filterModel.executeFilters();
             }
 
