@@ -16,7 +16,9 @@ import java.time.LocalDate;
 import java.time.YearMonth;
 import java.time.format.DateTimeFormatter;
 import java.time.format.DateTimeParseException;
+import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.List;
 import javax.swing.BorderFactory;
 import javax.swing.JButton;
 import javax.swing.JCheckBox;
@@ -39,26 +41,27 @@ import org.openstreetmap.josm.tools.Shortcut;
 public class OHMDateFilterDialog extends ToggleDialog {
 
     DateHandler dateHandler = new DateHandler();
-    private JTextField jTextFieldStartDate = new JTextField("1890");
+
+    FilterList filterList = new FilterList();
+
+    private JTextField jTextFieldStartDate = new JTextField("1800");
     private JTextField jTextFieldEndDate = new JTextField("1950");
-    private JLabel jLabelCurrentDate = new JLabel();
-    private JTextField jTextSearchFormat = new JTextField();
-    // Checkboxes
-    private JCheckBox jcheckbox_start_date_null = new JCheckBox("start_date", false); // Start as true
-    private JCheckBox jcheckbox_end_date_null = new JCheckBox("end_date", false);     // Start as true
+    // Checkboxes for null data
+    private JCheckBox jcheckbox_start_date_null = new JCheckBox("start_date", false);
+    private JCheckBox jcheckbox_end_date_null = new JCheckBox("end_date", false);
+    // Checkboxes for null relations
+    private JCheckBox jcheckbox_relation_only = new JCheckBox("Filter Relation only and their childs", false);
 
     // Slider
     JPanel sliderPanel = new JPanel(new GridBagLayout());
     private JSlider jSliderDate = new JSlider(JSlider.HORIZONTAL);
-
-    private JTextField jTextSettings = new JTextField();
 
     public OHMDateFilterDialog() {
         super(tr("OpenHistoricalMap Date Filter"),
                 "iconohmdatefilter16",
                 tr("Open OpenHistoricalMap date filter window"),
                 Shortcut.registerShortcut("ohmDateFilter", tr("Toggle: {0}", tr("OpenHistoricalMap Date Filter")), KeyEvent.VK_I,
-                        Shortcut.ALT_CTRL_SHIFT), 130);
+                        Shortcut.ALT_CTRL_SHIFT), 180);
 
         JosmAction oHMActionSaver = new JosmAction(
                 tr("Save Filter"), "save",
@@ -86,14 +89,19 @@ public class OHMDateFilterDialog extends ToggleDialog {
         SideButton sideButtonReset = new SideButton(oHMActionReset);
 
         //Main panel
-        JPanel mainPanel = new JPanel(new GridLayout(3, 1));
-        mainPanel.setMinimumSize(new Dimension(130, 30));
+        JPanel mainPanel = new JPanel(new GridLayout(4, 1));
+        mainPanel.setMinimumSize(new Dimension(180, 30));
 
         //Add panels 
         mainPanel.add(inputDatePanel());
-        mainPanel.add(checkDatesPanel());
+
+        mainPanel.add(jcheckbox_relation_only);
+        mainPanel.add(checkNullObjects());
 
         mainPanel.add(dateSliderPanel());
+        jcheckbox_relation_only.addActionListener(e -> {
+            filterMapData(false, false);
+        });
 
         createLayout(mainPanel, false, Arrays.asList(sideButtonSaveFilter, sideButtonReset));
     }
@@ -148,11 +156,19 @@ public class OHMDateFilterDialog extends ToggleDialog {
         return panel;
     }
 
-    private JPanel checkDatesPanel() {
+    private JPanel checkNullObjects() {
         JPanel panel = new JPanel(new FlowLayout(FlowLayout.LEFT));
-        panel.setBorder(BorderFactory.createTitledBorder("Include null values for"));
+        panel.setBorder(BorderFactory.createTitledBorder("Display objects with null values"));
         panel.add(jcheckbox_start_date_null);
         panel.add(jcheckbox_end_date_null);
+
+        jcheckbox_start_date_null.addActionListener(e -> {
+            filterMapData(false, false);
+        });
+
+        jcheckbox_end_date_null.addActionListener(e -> {
+            filterMapData(false, false);
+        });
 
         return panel;
     }
@@ -161,6 +177,7 @@ public class OHMDateFilterDialog extends ToggleDialog {
         sliderPanel.setBorder(titlePanel("Date"));
         jSliderDate.setPreferredSize(new Dimension(300, 50));
         jSliderDate.addChangeListener(e -> {
+
             filterMapData(false, false);
         });
 
@@ -179,41 +196,42 @@ public class OHMDateFilterDialog extends ToggleDialog {
         int currentValue = jSliderDate.getValue();
         String currentDateString = dateHandler.addDaysToStartDate(currentValue);
         // Set date in the panel title
-        sliderPanel.setBorder(titlePanel("start_date > " + currentDateString + " AND end_date < " + currentDateString));
-
-        String searchFormat_start_date = getSearchFormat(currentDateString, true);
-        String searchFormat_end_date = getSearchFormat(currentDateString, false);
-
-        // Convert searchFormat into searchSetting
-        SearchSetting searchSetting_start_date = getSearchSetting(searchFormat_start_date);
-        SearchSetting searchSetting_end_date = getSearchSetting(searchFormat_end_date);
+        sliderPanel.setBorder(titlePanel("Current date :" + currentDateString));
 
         // Include 
-        boolean include_start_date_null = jcheckbox_start_date_null.isSelected();
-        boolean include_end_date_null = jcheckbox_end_date_null.isSelected();
+        boolean includeStartDateNull = !jcheckbox_start_date_null.isSelected();
+        boolean includeEndDateNull = !jcheckbox_end_date_null.isSelected();
+        
+        boolean isRelationOnly = jcheckbox_relation_only.isSelected();
 
-        OHMDateFilterFunctions.applyDateFilter(searchSetting_start_date, searchSetting_end_date, saveFilter, resetFilters, include_start_date_null, include_end_date_null);
+        //Include null values for start_date
+        filterList.getExistingStartDate().setActive(includeStartDateNull);
+
+        //Include null values for end_date
+        filterList.getExistingEndDate().setActive(includeEndDateNull);
+
+        //Start date for nodes,ways and relations
+        filterList.getStartDate().setText("start_date>\"" + currentDateString + "\"");
+        filterList.getStartDate().setActive(!isRelationOnly);
+
+        //End date for nodes,ways and relations
+        filterList.getEndDate().setText("end_date<\"" + currentDateString + "\"");
+        filterList.getEndDate().setActive(!isRelationOnly);
+
+        //Start date only for relations
+        filterList.getOnlyRelationsStartDate().setText("child(type:relation start_date>\"" + currentDateString + "\")");
+        filterList.getOnlyRelationsStartDate().setActive(isRelationOnly);
+
+        //End date only for relations
+        filterList.getOnlyRelationsEndDate().setText("child(type:relation end_date<\"" + currentDateString + "\")");
+        filterList.getOnlyRelationsEndDate().setActive(isRelationOnly);
+
+        filterList.getOnlyRelations().setActive(isRelationOnly);
+        
+         OHMDateFilterFunctions.applyDateFilter(filterList, saveFilter, resetFilters);
     }
 
-    private String getSearchFormat(String currentDate, boolean start_date) {
-
-        if (start_date) {
-            return "child(type:relation start_date>\"" + currentDate + "\") OR start_date>\"" + currentDate + "\"";
-        } else {
-            return "child(type:relation end _date<\"" + currentDate + "\") OR end_date<\"" + currentDate + "\"";
-        }
-    }
-
-    private SearchSetting getSearchSetting(String searchFormat) {
-        SearchSetting searchSetting = new SearchSetting();
-        searchSetting.text = searchFormat;
-        searchSetting.caseSensitive = false;
-        searchSetting.regexSearch = false;
-        searchSetting.mapCSSSearch = false;
-        searchSetting.allElements = true;
-        return searchSetting;
-    }
-
+    
     private TitledBorder titlePanel(String title) {
         TitledBorder border = BorderFactory.createTitledBorder(title);
         border.setTitleColor(Color.decode("#337AFF"));
@@ -222,7 +240,7 @@ public class OHMDateFilterDialog extends ToggleDialog {
     }
 
     public static String formatDateString(String dateString, boolean startDate) {
-        DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd");
+//        DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd");
 
         // Validate that the year is 1 or greater
         if (dateString.matches("\\d{4}") || dateString.matches("\\d{4}-\\d{2}")) {
@@ -255,7 +273,7 @@ public class OHMDateFilterDialog extends ToggleDialog {
         }
 
         try {
-            LocalDate date = LocalDate.parse(dateString, formatter);
+//            LocalDate date = LocalDate.parse(dateString, formatter);
         } catch (DateTimeParseException e) {
             String message;
             if (startDate) {
