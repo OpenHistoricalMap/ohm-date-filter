@@ -2,7 +2,6 @@ package org.openstreetmap.josm.plugins.ohmdatefilter;
 
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
-import java.time.format.DateTimeParseException;
 import java.time.temporal.ChronoUnit;
 
 public class DateHandler {
@@ -10,7 +9,6 @@ public class DateHandler {
     private String startDateString;
 
     private String endDateString;
-    private int rangeInDays;
 
     private LocalDate startDate;
     private LocalDate endDate;
@@ -43,12 +41,10 @@ public class DateHandler {
 
   public int getRangeInDays() {
     if (this.startDate != null && this.endDate != null) {
-        // Check if startDate is less than or equal to endDate
         if (this.startDate.isBefore(this.endDate) || this.startDate.isEqual(this.endDate)) {
-            // Calculate and return the number of days between startDate and endDate
             return (int) ChronoUnit.DAYS.between(this.startDate, this.endDate);
         } else {
-            throw new IllegalArgumentException("startDate should be before or equal to endDate.");
+            return -1;
         }
     }
     return 0;
@@ -67,16 +63,10 @@ public class DateHandler {
 
     public String addDaysToStartDate(int days) {
         if (this.startDate != null && this.endDate != null) {
-            // Add the specified number of days to the startDate
             LocalDate newDate = this.startDate.plusDays(days);
-
-            // Ensure the new date does not exceed the endDate
             if (newDate.isAfter(this.endDate)) {
-                // If the new date exceeds the end date, return the end date as a string
                 return this.endDate.toString();
             }
-
-            // Otherwise, return the new date as a string
             return newDate.toString();
         }
 

@@ -13,6 +13,7 @@ import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.awt.event.KeyEvent;
 import java.time.LocalDate;
+import java.time.YearMonth;
 import java.time.format.DateTimeFormatter;
 import java.time.format.DateTimeParseException;
 import java.util.Arrays;
@@ -22,7 +23,6 @@ import javax.swing.JCheckBox;
 
 import javax.swing.JPanel;
 import javax.swing.JTextField;
-import javax.swing.JComboBox;
 import javax.swing.JLabel;
 import javax.swing.JSlider;
 import javax.swing.border.TitledBorder;
@@ -114,23 +114,31 @@ public class OHMDateFilterDialog extends ToggleDialog {
             public void actionPerformed(ActionEvent e) {
                 String inputStartDate = jTextFieldStartDate.getText();
                 String inputEndDate = jTextFieldEndDate.getText();
-
-                System.out.println("======================");
-                System.out.println(inputStartDate);
-                System.out.println(inputEndDate);
+                System.out.println("input start_date=" + inputStartDate);
+                System.out.println("input end_date=" + inputEndDate);
 
                 if (inputStartDate != null && !inputStartDate.isEmpty() && inputEndDate != null && !inputEndDate.isEmpty()) {
 
                     String fixedInputStartDate = formatDateString(inputStartDate, true);
                     String fixedInputEndDate = formatDateString(inputEndDate, false);
-//                    System.out.println(fixedInputStartDate);
-//                    System.out.println(fixedInputEndDate);
                     if (fixedInputStartDate != null && fixedInputEndDate != null) {
                         dateHandler.setStartDateString(fixedInputStartDate);
                         dateHandler.setEndDateString(fixedInputEndDate);
-                        jSliderDate.setMinimum(0);
-                        jSliderDate.setValue(0);
-                        jSliderDate.setMaximum(dateHandler.getRangeInDays());
+
+                        int numDays = dateHandler.getRangeInDays();
+                        if (numDays <= 0) {
+                            HelpAwareOptionPane.showOptionDialog(
+                                    null,
+                                    "Start date should be greater than End date.",
+                                    "Date Issue",
+                                    JOptionPane.WARNING_MESSAGE,
+                                    null
+                            );
+                        } else {
+                            jSliderDate.setMinimum(0);
+                            jSliderDate.setValue(0);
+                            jSliderDate.setMaximum(numDays);
+                        }
                     }
                 }
             }
@@ -141,10 +149,8 @@ public class OHMDateFilterDialog extends ToggleDialog {
     }
 
     private JPanel checkDatesPanel() {
-        // Create a panel with a titled border "Include"
         JPanel panel = new JPanel(new FlowLayout(FlowLayout.LEFT));
         panel.setBorder(BorderFactory.createTitledBorder("Include null values for"));
-        // Add checkboxes to the panel, arranged horizontally
         panel.add(jcheckbox_start_date_null);
         panel.add(jcheckbox_end_date_null);
 
@@ -174,7 +180,6 @@ public class OHMDateFilterDialog extends ToggleDialog {
         String currentDateString = dateHandler.addDaysToStartDate(currentValue);
         // Set date in the panel title
         sliderPanel.setBorder(titlePanel("start_date > " + currentDateString + " AND end_date < " + currentDateString));
-//        System.out.println("Current slider value: " + currentValue + "<>" + currentDateString);
 
         String searchFormat_start_date = getSearchFormat(currentDateString, true);
         String searchFormat_end_date = getSearchFormat(currentDateString, false);
@@ -197,12 +202,6 @@ public class OHMDateFilterDialog extends ToggleDialog {
         } else {
             return "child(type:relation end _date<\"" + currentDate + "\") OR end_date<\"" + currentDate + "\"";
         }
-
-//        if (start_date) {
-//            return "start_date>\"" + currentDate + "\"";
-//        } else {
-//            return "end_date<\"" + currentDate + "\"";
-//        }
     }
 
     private SearchSetting getSearchSetting(String searchFormat) {
@@ -222,42 +221,48 @@ public class OHMDateFilterDialog extends ToggleDialog {
         return border;
     }
 
-    public String formatDateString(String dateString, boolean startDate) {
+    public static String formatDateString(String dateString, boolean startDate) {
         DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd");
 
+        // Validate that the year is 1 or greater
+        if (dateString.matches("\\d{4}") || dateString.matches("\\d{4}-\\d{2}")) {
+            int year = Integer.parseInt(dateString.substring(0, 4));
+            if (year < 1) {
+                HelpAwareOptionPane.showOptionDialog(
+                        null,
+                        "The year must be 1 or greater (AD).",
+                        "Date Issue",
+                        JOptionPane.WARNING_MESSAGE,
+                        null
+                );
+                return null;
+            }
+        }
+
         if (startDate) {
-            // Check the format of the date string and complete it to 'yyyy-MM-dd' for start date
-            if (dateString.matches("\\d{4}")) {  // Only year
-                dateString += "-01-01";  // Complete to 'yyyy-01-01'
-            } else if (dateString.matches("\\d{4}-\\d{2}")) {  // Year and month
-                dateString += "-01";  // Complete to 'yyyy-MM-01'
+            if (dateString.matches("\\d{4}")) {
+                dateString += "-01-01";
+            } else if (dateString.matches("\\d{4}-\\d{2}")) {
+                dateString += "-01";
             }
-
         } else {
-
-            // Check the format of the date string and complete it to 'yyyy-MM-dd' for start date
-            if (dateString.matches("\\d{4}")) {  // Only year
-                dateString += "-12-31";  // Complete to 'yyyy-01-01'
-            } else if (dateString.matches("\\d{4}-\\d{2}")) {  // Year and month
-                dateString += "-01";  // Complete to 'yyyy-MM-01'
+            if (dateString.matches("\\d{4}")) {
+                dateString += "-12-31";
+            } else if (dateString.matches("\\d{4}-\\d{2}")) {
+                YearMonth yearMonth = YearMonth.parse(dateString, DateTimeFormatter.ofPattern("yyyy-MM"));
+                dateString = yearMonth.atEndOfMonth().toString();
             }
-
         }
 
         try {
-            // Parse the completed date string to LocalDate
             LocalDate date = LocalDate.parse(dateString, formatter);
         } catch (DateTimeParseException e) {
-            System.out.println("Error: Format should be 'yyyy-MM-dd'.");
-
-            String message = "";
+            String message;
             if (startDate) {
-                message = "Set a valid start_date in valid format yyyy-MM-dd";
+                message = "Set a valid start_date in the format yyyy-MM-dd.";
             } else {
-                message = "Set a valid end_date in valid format yyyy-MM-dd";
-
+                message = "Set a valid end_date in the format yyyy-MM-dd.";
             }
-
             HelpAwareOptionPane.showOptionDialog(
                     null,
                     message,
@@ -270,5 +275,4 @@ public class OHMDateFilterDialog extends ToggleDialog {
 
         return dateString;
     }
-
 }
