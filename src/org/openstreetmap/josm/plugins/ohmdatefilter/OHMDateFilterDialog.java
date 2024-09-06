@@ -44,8 +44,8 @@ public class OHMDateFilterDialog extends ToggleDialog {
     private JLabel jLabelCurrentDate = new JLabel();
     private JTextField jTextSearchFormat = new JTextField();
     // Checkboxes
-    private JCheckBox jcheckbox_start_date_null = new JCheckBox("start_date=*", true); // Start as true
-    private JCheckBox jcheckbox_end_date_null = new JCheckBox("end_date=*", true);     // Start as true
+    private JCheckBox jcheckbox_start_date_null = new JCheckBox("start_date", false); // Start as true
+    private JCheckBox jcheckbox_end_date_null = new JCheckBox("end_date", false);     // Start as true
 
     // Slider
     JPanel sliderPanel = new JPanel(new GridBagLayout());
@@ -86,12 +86,12 @@ public class OHMDateFilterDialog extends ToggleDialog {
         SideButton sideButtonReset = new SideButton(oHMActionReset);
 
         //Main panel
-        JPanel mainPanel = new JPanel(new GridLayout(2, 1));
+        JPanel mainPanel = new JPanel(new GridLayout(3, 1));
         mainPanel.setMinimumSize(new Dimension(130, 30));
 
         //Add panels 
         mainPanel.add(inputDatePanel());
-//        mainPanel.add(checkDatesPanel());
+        mainPanel.add(checkDatesPanel());
 
         mainPanel.add(dateSliderPanel());
 
@@ -143,7 +143,7 @@ public class OHMDateFilterDialog extends ToggleDialog {
     private JPanel checkDatesPanel() {
         // Create a panel with a titled border "Include"
         JPanel panel = new JPanel(new FlowLayout(FlowLayout.LEFT));
-        panel.setBorder(BorderFactory.createTitledBorder("Include existing values"));
+        panel.setBorder(BorderFactory.createTitledBorder("Include null values for"));
         // Add checkboxes to the panel, arranged horizontally
         panel.add(jcheckbox_start_date_null);
         panel.add(jcheckbox_end_date_null);
@@ -187,7 +187,7 @@ public class OHMDateFilterDialog extends ToggleDialog {
         boolean include_start_date_null = jcheckbox_start_date_null.isSelected();
         boolean include_end_date_null = jcheckbox_end_date_null.isSelected();
 
-        OHMDateFilterFunctions.applyDateFilter(searchSetting_start_date, searchSetting_end_date, saveFilter, resetFilters, include_start_date_null,include_end_date_null);
+        OHMDateFilterFunctions.applyDateFilter(searchSetting_start_date, searchSetting_end_date, saveFilter, resetFilters, include_start_date_null, include_end_date_null);
     }
 
     private String getSearchFormat(String currentDate, boolean start_date) {
@@ -225,11 +225,23 @@ public class OHMDateFilterDialog extends ToggleDialog {
     public String formatDateString(String dateString, boolean startDate) {
         DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd");
 
-        // Check the format of the date string and complete it to 'yyyy-MM-dd'
-        if (dateString.matches("\\d{4}")) {  // Only year
-            dateString += "-01-01";  // Complete to 'yyyy-01-01'
-        } else if (dateString.matches("\\d{4}-\\d{2}")) {  // Year and month
-            dateString += "-01";  // Complete to 'yyyy-MM-01'
+        if (startDate) {
+            // Check the format of the date string and complete it to 'yyyy-MM-dd' for start date
+            if (dateString.matches("\\d{4}")) {  // Only year
+                dateString += "-01-01";  // Complete to 'yyyy-01-01'
+            } else if (dateString.matches("\\d{4}-\\d{2}")) {  // Year and month
+                dateString += "-01";  // Complete to 'yyyy-MM-01'
+            }
+
+        } else {
+
+            // Check the format of the date string and complete it to 'yyyy-MM-dd' for start date
+            if (dateString.matches("\\d{4}")) {  // Only year
+                dateString += "-12-31";  // Complete to 'yyyy-01-01'
+            } else if (dateString.matches("\\d{4}-\\d{2}")) {  // Year and month
+                dateString += "-01";  // Complete to 'yyyy-MM-01'
+            }
+
         }
 
         try {

@@ -42,7 +42,7 @@ public class OHMDateFilterFunctions {
 
             // Exist start_date
             Filter filter_start_date_exist = new Filter();
-            filter_start_date_exist.text = "start_date=*";
+            filter_start_date_exist.text = "-start_date=";
             filter_start_date_exist.inverted = true;
 
             // Create filter for end date
@@ -56,7 +56,7 @@ public class OHMDateFilterFunctions {
 
             //Exist end_date
             Filter filter_end_date_exist = new Filter();
-            filter_end_date_exist.text = "end_date=*";
+            filter_end_date_exist.text = "-end_date=";
             filter_end_date_exist.inverted = true;
 
             // Create filter for reset
@@ -73,11 +73,11 @@ public class OHMDateFilterFunctions {
                 FilterDialog filterDialog = MainApplication.getMap().filterDialog;
                 FilterTableModel filterModel = filterDialog.getFilterModel();
 
-                if (include_start_date_null) {
+                if (!include_start_date_null) {
                     filterModel.addFilter(filter_start_date_exist);
 
                 }
-                if (include_end_date_null) {
+                if (!include_end_date_null) {
                     filterModel.addFilter(filter_end_date_exist);
                 }
 
@@ -91,10 +91,10 @@ public class OHMDateFilterFunctions {
             } else {
                 // Just apply filter in the map
                 FilterModel filterModel = new FilterModel();
-                if (include_start_date_null) {
+                if (!include_start_date_null) {
                     filterModel.addFilter(filter_start_date_exist);
                 }
-                if (include_end_date_null) {
+                if (!include_end_date_null) {
                     filterModel.addFilter(filter_end_date_exist);
                 }
                 filterModel.addFilter(filter_start_date);

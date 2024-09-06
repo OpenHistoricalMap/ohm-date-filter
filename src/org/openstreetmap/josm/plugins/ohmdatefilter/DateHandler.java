@@ -20,16 +20,8 @@ public class DateHandler {
     public DateHandler() {
     }
 
-//    public DateHandler(String startDateString, String endDateString) {
-//        this.startDateString = startDateString;
-//        this.endDateString = endDateString;
-//        this.startDate = getDateFromString(startDateString);
-//        this.endDate = getDateFromString(endDateString);
-//    }
-
     public void setStartDateString(String startDateString) {
         this.startDateString = startDateString;
-//        this.startDate = getDateFromString(startDateString);
         this.startDate = LocalDate.parse(startDateString, formatter);
 
     }
@@ -37,36 +29,30 @@ public class DateHandler {
     public void setEndDateString(String endDateString) {
         this.endDateString = endDateString;
         this.endDate = LocalDate.parse(endDateString, formatter);
-//        this.endDate = getDateFromString(endDateString);
     }
 
     public LocalDate getStartDate() {
-        System.out.println("===");
-
-        System.out.println(this.startDate);
-
         return this.startDate;
     }
 
     public LocalDate getEndDate() {
-        System.out.println("----");
-
-        System.out.println(this.endDate);
-
         return this.endDate;
     }
 
   
 
-    public int getRangeInDays() {
-        if (this.startDate != null && this.endDate != null) {
+  public int getRangeInDays() {
+    if (this.startDate != null && this.endDate != null) {
+        // Check if startDate is less than or equal to endDate
+        if (this.startDate.isBefore(this.endDate) || this.startDate.isEqual(this.endDate)) {
             // Calculate and return the number of days between startDate and endDate
             return (int) ChronoUnit.DAYS.between(this.startDate, this.endDate);
+        } else {
+            throw new IllegalArgumentException("startDate should be before or equal to endDate.");
         }
-
-        // If startDate or endDate is null, return 0 to indicate no range
-        return 0;
     }
+    return 0;
+}
 
     @Override
     public String toString() {
@@ -94,22 +80,7 @@ public class DateHandler {
             return newDate.toString();
         }
 
-        // If startDate or endDate is null, return an empty string or handle as needed
         return "";
     }
 
-//    public static void main(String[] args) {
-//        System.out.println("======================");
-//
-//        DateHandler handler = new DateHandler("1990", "2000-04");
-//        String startDatePlus = handler.addDaysToStartDate(200);
-//        System.out.println(handler.toString());
-//        System.out.println(startDatePlus);
-//
-//        System.out.println("======================");
-//        handler.setEndDateString("1991");
-//        System.out.println(handler.toString());
-//        System.out.println(startDatePlus);
-//
-//    }
 }
