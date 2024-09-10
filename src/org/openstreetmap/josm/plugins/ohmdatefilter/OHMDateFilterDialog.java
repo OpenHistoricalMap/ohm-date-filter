@@ -1,61 +1,67 @@
 package org.openstreetmap.josm.plugins.ohmdatefilter;
 
+import java.awt.Color;
 import java.awt.Dimension;
 import java.awt.FlowLayout;
+import java.awt.Font;
 import java.awt.GridBagConstraints;
 import java.awt.GridBagLayout;
 import static org.openstreetmap.josm.tools.I18n.tr;
 
 import java.awt.GridLayout;
-import java.awt.Insets;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.awt.event.KeyEvent;
+import java.time.LocalDate;
+import java.time.YearMonth;
+import java.time.format.DateTimeFormatter;
+import java.time.format.DateTimeParseException;
+import java.util.ArrayList;
 import java.util.Arrays;
-import javax.swing.ButtonGroup;
+import java.util.List;
+import javax.swing.BorderFactory;
 import javax.swing.JButton;
+import javax.swing.JCheckBox;
 
 import javax.swing.JPanel;
 import javax.swing.JTextField;
-import javax.swing.JComboBox;
-import javax.swing.JOptionPane;
-import javax.swing.JRadioButton;
+import javax.swing.JLabel;
+import javax.swing.JSlider;
+import javax.swing.border.TitledBorder;
 
-import javax.swing.event.ChangeEvent;
-import javax.swing.event.ChangeListener;
-import javax.swing.event.DocumentEvent;
-import javax.swing.event.DocumentListener;
 import org.openstreetmap.josm.actions.JosmAction;
 import org.openstreetmap.josm.data.osm.search.SearchSetting;
+import javax.swing.JOptionPane;
 import org.openstreetmap.josm.gui.HelpAwareOptionPane;
-import org.openstreetmap.josm.gui.MainApplication;
 
 import org.openstreetmap.josm.gui.SideButton;
 import org.openstreetmap.josm.gui.dialogs.ToggleDialog;
-import static org.openstreetmap.josm.gui.help.HelpUtil.ht;
 import org.openstreetmap.josm.tools.Shortcut;
 
 public class OHMDateFilterDialog extends ToggleDialog {
 
-    String[] listYears = new String[]{"2 years", "5 years", "10 years", "50 years", "100 years", "200 years", "500 years"};
-    String[] listMonths = new String[]{"2 Months", "5 Months", "10 Months", "12 Months"};
-    Boolean updateComoBox = false;
-    String filter_by = "both";
-    int current_lower_value = 0;
-    int current_upper_value = 0;
-
     DateHandler dateHandler = new DateHandler();
-    private JTextField jTextFieldYear = new JTextField();
-    private JTextField jTextSettings = new JTextField();
-    private RangeSlider rangeSlider = new RangeSlider();
-    private JComboBox jComboBoxRange = new JComboBox<>();
+
+    FilterList filterList = new FilterList();
+
+    private JTextField jTextFieldStartDate = new JTextField("1800");
+    private JTextField jTextFieldEndDate = new JTextField("1950");
+    // Checkboxes for null data
+    private JCheckBox jcheckbox_start_date_null = new JCheckBox("start_date", false);
+    private JCheckBox jcheckbox_end_date_null = new JCheckBox("end_date", false);
+    // Checkboxes for null relations
+    private JCheckBox jcheckbox_relation_only = new JCheckBox("Filter Relation only and their childs", false);
+
+    // Slider
+    JPanel sliderPanel = new JPanel(new GridBagLayout());
+    private JSlider jSliderDate = new JSlider(JSlider.HORIZONTAL);
 
     public OHMDateFilterDialog() {
         super(tr("OpenHistoricalMap Date Filter"),
                 "iconohmdatefilter16",
                 tr("Open OpenHistoricalMap date filter window"),
                 Shortcut.registerShortcut("ohmDateFilter", tr("Toggle: {0}", tr("OpenHistoricalMap Date Filter")), KeyEvent.VK_I,
-                        Shortcut.ALT_CTRL_SHIFT), 90);
+                        Shortcut.ALT_CTRL_SHIFT), 180);
 
         JosmAction oHMActionSaver = new JosmAction(
                 tr("Save Filter"), "save",
@@ -64,9 +70,7 @@ public class OHMDateFilterDialog extends ToggleDialog {
                         KeyEvent.VK_S, Shortcut.SHIFT), true) {
             @Override
             public void actionPerformed(ActionEvent e) {
-                String searchFormat = jTextSettings.getText();
-                SearchSetting searchSetting = getSearchSetting(searchFormat);
-                OHMDateFilterFunctions.applyDateFilter(searchSetting, true);
+                filterMapData(true, false);
             }
         };
 
@@ -77,8 +81,7 @@ public class OHMDateFilterDialog extends ToggleDialog {
                         KeyEvent.VK_R, Shortcut.SHIFT), true) {
             @Override
             public void actionPerformed(ActionEvent e) {
-                SearchSetting searchSetting = new SearchSetting();
-                OHMDateFilterFunctions.applyDateFilter(searchSetting, false);
+                filterMapData(false, true);
             }
         };
 
@@ -87,231 +90,207 @@ public class OHMDateFilterDialog extends ToggleDialog {
 
         //Main panel
         JPanel mainPanel = new JPanel(new GridLayout(4, 1));
-        mainPanel.setMinimumSize(new Dimension(200, 30));
+        mainPanel.setMinimumSize(new Dimension(180, 30));
 
         //Add panels 
-        mainPanel.add(imputDatePanel());
-        mainPanel.add(rangeSliderPanel());
-        mainPanel.add(radioOptions());
+        mainPanel.add(inputDatePanel());
 
-        mainPanel.add(jTextSettings);
+        mainPanel.add(jcheckbox_relation_only);
+        mainPanel.add(checkNullObjects());
+
+        mainPanel.add(dateSliderPanel());
+        jcheckbox_relation_only.addActionListener(e -> {
+            filterMapData(false, false);
+        });
 
         createLayout(mainPanel, false, Arrays.asList(sideButtonSaveFilter, sideButtonReset));
-
     }
 
-    private JPanel imputDatePanel() {
+    private JPanel inputDatePanel() {
         // Imput panel to add initial date
         JPanel panel = new JPanel(new GridLayout(1, 3));
         panel.setBorder(javax.swing.BorderFactory.createTitledBorder("Set Date and Range value"));
-        panel.add(jTextFieldYear);
+        panel.add(jTextFieldStartDate);
+        panel.add(jTextFieldEndDate);
 
-        jComboBoxRange.setModel(new javax.swing.DefaultComboBoxModel<>(listYears));
-        panel.add(jComboBoxRange, java.awt.BorderLayout.CENTER);
-
-        JButton jButtonSetYear = new JButton("Set date");
+        JButton jButtonSetYear = new JButton("Set");
         panel.add(jButtonSetYear);
 
         // Add ActionListener to the button
         jButtonSetYear.addActionListener(new ActionListener() {
             @Override
             public void actionPerformed(ActionEvent e) {
-                String input = jTextFieldYear.getText();
-                int rangeValue = (int) UtilDates.getRangeValue(jComboBoxRange.getSelectedItem() + "");
+                String inputStartDate = jTextFieldStartDate.getText();
+                String inputEndDate = jTextFieldEndDate.getText();
+                System.out.println("input start_date=" + inputStartDate);
+                System.out.println("input end_date=" + inputEndDate);
 
-                if (input != null && !input.isEmpty()) {
-                    setMinMaxYearForSlider(input, rangeValue);
-                }
-            }
-        });
-        jTextFieldYear.getDocument().addDocumentListener(new DocumentListener() {
-            public void changedUpdate(DocumentEvent e) {
-                handleTextChange();
-            }
+                if (inputStartDate != null && !inputStartDate.isEmpty() && inputEndDate != null && !inputEndDate.isEmpty()) {
 
-            public void removeUpdate(DocumentEvent e) {
-                handleTextChange();
-            }
+                    String fixedInputStartDate = formatDateString(inputStartDate, true);
+                    String fixedInputEndDate = formatDateString(inputEndDate, false);
+                    if (fixedInputStartDate != null && fixedInputEndDate != null) {
+                        dateHandler.setStartDateString(fixedInputStartDate);
+                        dateHandler.setEndDateString(fixedInputEndDate);
 
-            public void insertUpdate(DocumentEvent e) {
-                handleTextChange();
-            }
-
-            public void handleTextChange() {
-                String text = jTextFieldYear.getText();
-
-                try {
-                    if (text.contains("-")) {
-                        if (!updateComoBox) {
-                            jComboBoxRange.removeAllItems();
-                            for (String month : listMonths) {
-                                jComboBoxRange.addItem(month);
-                            }
+                        int numDays = dateHandler.getRangeInDays();
+                        if (numDays <= 0) {
+                            HelpAwareOptionPane.showOptionDialog(
+                                    null,
+                                    "Start date should be greater than End date.",
+                                    "Date Issue",
+                                    JOptionPane.WARNING_MESSAGE,
+                                    null
+                            );
+                        } else {
+                            jSliderDate.setMinimum(0);
+                            jSliderDate.setValue(0);
+                            jSliderDate.setMaximum(numDays);
                         }
-                        updateComoBox = true;
-                    } else {
-                        if (updateComoBox) {
-                            jComboBoxRange.removeAllItems();
-                            for (String year : listYears) {
-                                jComboBoxRange.addItem(year);
-                            }
-                            updateComoBox = false;
-                        }
-
                     }
-                } catch (NumberFormatException ex) {
-                    System.out.println("Invalid number: " + text);
                 }
             }
+
         });
 
         return panel;
     }
 
-    private JPanel rangeSliderPanel() {
-        // Panel that contains slider range panel 
-        JPanel panel = new JPanel(new GridBagLayout());
-        rangeSlider.setPreferredSize(new Dimension(300, 100));
-        panel.setBorder(javax.swing.BorderFactory.createTitledBorder("Set Date Range"));
-        rangeSlider.addChangeListener(new ChangeListener() {
-            public void stateChanged(ChangeEvent e) {
-                RangeSlider slider = (RangeSlider) e.getSource();
-                // Get serach format
-                current_lower_value = slider.getValue();
-                current_upper_value = slider.getUpperValue();
-                filterObjects();
-            }
+    private JPanel checkNullObjects() {
+        JPanel panel = new JPanel(new FlowLayout(FlowLayout.LEFT));
+        panel.setBorder(BorderFactory.createTitledBorder("Display objects with null values"));
+        panel.add(jcheckbox_start_date_null);
+        panel.add(jcheckbox_end_date_null);
+
+        jcheckbox_start_date_null.addActionListener(e -> {
+            filterMapData(false, false);
         });
 
-        panel.add(rangeSlider, new GridBagConstraints(0, 2, 2, 1, 1.0, 0.0,
-                GridBagConstraints.NORTHWEST, GridBagConstraints.HORIZONTAL,
-                new Insets(0, 0, 0, 0), 0, 0));
+        jcheckbox_end_date_null.addActionListener(e -> {
+            filterMapData(false, false);
+        });
+
         return panel;
     }
 
-    private JPanel radioOptions() {
-        // Crear el panel
-        JPanel panel = new JPanel(new GridLayout(1, 3));
-        panel.setBorder(javax.swing.BorderFactory.createTitledBorder("Filter by"));
+    private JPanel dateSliderPanel() {
+        sliderPanel.setBorder(titlePanel("Date"));
+        jSliderDate.setPreferredSize(new Dimension(300, 50));
+        jSliderDate.addChangeListener(e -> {
 
-        // Crear los botones de radio
-        JRadioButton startDateButton = new JRadioButton("start_date");
-        JRadioButton endDateButton = new JRadioButton("end_date");
-        JRadioButton bothButton = new JRadioButton("both");
-
-        // Crear el ButtonGroup y agregar los botones de radio
-        ButtonGroup group = new ButtonGroup();
-        group.add(startDateButton);
-        group.add(endDateButton);
-        group.add(bothButton);
-        bothButton.setSelected(true);
-
-        // Agregar los botones de radio al panel
-        panel.add(startDateButton);
-        panel.add(endDateButton);
-        panel.add(bothButton);
-
-        // Agregar ActionListener a cada botón de radio
-        startDateButton.addActionListener(new ActionListener() {
-            @Override
-            public void actionPerformed(ActionEvent e) {
-                filter_by = "start_date";
-                filterObjects();
-            }
+            filterMapData(false, false);
         });
 
-        endDateButton.addActionListener(new ActionListener() {
-            @Override
-            public void actionPerformed(ActionEvent e) {
-                filter_by = "end_date";
-                filterObjects();
-            }
-        });
-
-        bothButton.addActionListener(new ActionListener() {
-            @Override
-            public void actionPerformed(ActionEvent e) {
-                filter_by = "both";
-                filterObjects();
-            }
-        });
-        return panel;
+        GridBagConstraints gbc = new GridBagConstraints();
+        gbc.gridx = 0;
+        gbc.gridy = 0;
+        gbc.fill = GridBagConstraints.HORIZONTAL;
+        gbc.weightx = 1.0;
+        gbc.weighty = 0.0;
+        sliderPanel.add(jSliderDate, gbc);
+        return sliderPanel;
     }
 
-    private void filterObjects() {
-        String searchFormat = getSearchFormat(current_lower_value, current_upper_value);
-        System.err.println("Search format: " + searchFormat);
-        jTextSettings.setText(searchFormat);
-        SearchSetting searchSetting = getSearchSetting(searchFormat);
-        // Apply filter
-        OHMDateFilterFunctions.applyDateFilter(searchSetting, false);
+    private void filterMapData(boolean saveFilter, boolean resetFilters) {
+
+        int currentValue = jSliderDate.getValue();
+        String currentDateString = dateHandler.addDaysToStartDate(currentValue);
+        // Set date in the panel title
+        sliderPanel.setBorder(titlePanel("Current date :" + currentDateString));
+
+        // Include 
+        boolean includeStartDateNull = !jcheckbox_start_date_null.isSelected();
+        boolean includeEndDateNull = !jcheckbox_end_date_null.isSelected();
+        
+        boolean isRelationOnly = jcheckbox_relation_only.isSelected();
+
+        //Include null values for start_date
+        filterList.getExistingStartDate().setActive(includeStartDateNull);
+
+        //Include null values for end_date
+        filterList.getExistingEndDate().setActive(includeEndDateNull);
+
+        //Start date for nodes,ways and relations
+        filterList.getStartDate().setText("start_date>\"" + currentDateString + "\"");
+        filterList.getStartDate().setActive(!isRelationOnly);
+
+        //End date for nodes,ways and relations
+        filterList.getEndDate().setText("end_date<\"" + currentDateString + "\"");
+        filterList.getEndDate().setActive(!isRelationOnly);
+
+        //Start date only for relations
+        filterList.getOnlyRelationsStartDate().setText("child(type:relation start_date>\"" + currentDateString + "\")");
+        filterList.getOnlyRelationsStartDate().setActive(isRelationOnly);
+
+        //End date only for relations
+        filterList.getOnlyRelationsEndDate().setText("child(type:relation end_date<\"" + currentDateString + "\")");
+        filterList.getOnlyRelationsEndDate().setActive(isRelationOnly);
+
+        filterList.getOnlyRelations().setActive(isRelationOnly);
+        
+         OHMDateFilterFunctions.applyDateFilter(filterList, saveFilter, resetFilters);
     }
 
-    private void setMinMaxYearForSlider(String datestr, int RangeValue) {
-        boolean isMonthValue = false;
-        if (datestr.contains("-")) {
-            isMonthValue = true;
-        }
-        try {
+    
+    private TitledBorder titlePanel(String title) {
+        TitledBorder border = BorderFactory.createTitledBorder(title);
+        border.setTitleColor(Color.decode("#337AFF"));
+        border.setTitleFont(border.getTitleFont().deriveFont(Font.BOLD));
+        return border;
+    }
 
-            // Conver string date to date format
-            String currentDate_str = UtilDates.formatDate(datestr);
-            dateHandler.setDate(currentDate_str);
-            int minRange = dateHandler.getDaysAfterAdjustingYears(-1 * RangeValue);
-            int maxRange = dateHandler.getDaysAfterAdjustingYears(RangeValue);
-            int minWindow = dateHandler.getDaysAfterAdjustingYears(0);
-            int maxWindow = dateHandler.getDaysAfterAdjustingYears(1);
+    public static String formatDateString(String dateString, boolean startDate) {
+//        DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd");
 
-            if (isMonthValue) {
-                minRange = dateHandler.getDaysAfterAdjustingMonths(-1 * RangeValue);
-                maxRange = dateHandler.getDaysAfterAdjustingMonths(RangeValue);
-                minWindow = dateHandler.getDaysAfterAdjustingMonths(0);
-                maxWindow = dateHandler.getDaysAfterAdjustingMonths(1);
-            }
-
-            if (minRange < 0 || maxRange < 0 || minWindow < 0 || maxWindow < 0) {
-                HelpAwareOptionPane.showMessageDialogInEDT(
-                        MainApplication.getMainFrame(),
-                        "Wrong date: " + currentDate_str,
-                        tr("Warning"),
+        // Validate that the year is 1 or greater
+        if (dateString.matches("\\d{4}") || dateString.matches("\\d{4}-\\d{2}")) {
+            int year = Integer.parseInt(dateString.substring(0, 4));
+            if (year < 1) {
+                HelpAwareOptionPane.showOptionDialog(
+                        null,
+                        "The year must be 1 or greater (AD).",
+                        "Date Issue",
                         JOptionPane.WARNING_MESSAGE,
-                        ht("/Action/Open#MissingImporterForFiles")
+                        null
                 );
-                return;
+                return null;
             }
-
-            // Fill range
-            rangeSlider.setMinimum(minRange);
-            rangeSlider.setMaximum(maxRange);
-            rangeSlider.setUpperValue(maxWindow);
-            rangeSlider.setValue(minWindow);
-
-        } catch (NumberFormatException e) {
-            System.out.println("Invalid year format: ");
         }
-    }
 
-    private String getSearchFormat(int start_num_days, int end_num_days) {
-        String start_date_str = dateHandler.getDateFromDaysSinceYearZero(start_num_days);
-        String end_date_str = dateHandler.getDateFromDaysSinceYearZero(end_num_days - 1);
-        String filter_values = "";
-        if (filter_by == "both") {
-            filter_values = "start_date>" + start_date_str + " AND end_date<" + end_date_str;
-        } else if (filter_by == "end_date") {
-            filter_values = "end_date<" + end_date_str;
-        } else if (filter_by == "start_date") {
-            filter_values = "start_date>" + start_date_str;
+        if (startDate) {
+            if (dateString.matches("\\d{4}")) {
+                dateString += "-01-01";
+            } else if (dateString.matches("\\d{4}-\\d{2}")) {
+                dateString += "-01";
+            }
+        } else {
+            if (dateString.matches("\\d{4}")) {
+                dateString += "-12-31";
+            } else if (dateString.matches("\\d{4}-\\d{2}")) {
+                YearMonth yearMonth = YearMonth.parse(dateString, DateTimeFormatter.ofPattern("yyyy-MM"));
+                dateString = yearMonth.atEndOfMonth().toString();
+            }
         }
-        return filter_values;
-    }
 
-    private SearchSetting getSearchSetting(String searchFormat) {
-        SearchSetting searchSetting = new SearchSetting();
-        searchSetting.text = searchFormat;
-        searchSetting.caseSensitive = false;
-        searchSetting.regexSearch = false;
-        searchSetting.mapCSSSearch = false;
-        searchSetting.allElements = true;
-        return searchSetting;
+        try {
+//            LocalDate date = LocalDate.parse(dateString, formatter);
+        } catch (DateTimeParseException e) {
+            String message;
+            if (startDate) {
+                message = "Set a valid start_date in the format yyyy-MM-dd.";
+            } else {
+                message = "Set a valid end_date in the format yyyy-MM-dd.";
+            }
+            HelpAwareOptionPane.showOptionDialog(
+                    null,
+                    message,
+                    "Date Issue",
+                    JOptionPane.WARNING_MESSAGE,
+                    null
+            );
+            return null;
+        }
+
+        return dateString;
     }
 }

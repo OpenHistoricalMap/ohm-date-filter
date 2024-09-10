@@ -1,24 +1,16 @@
 package org.openstreetmap.josm.plugins.ohmdatefilter;
 
 import org.openstreetmap.josm.data.osm.DataSet;
-import org.openstreetmap.josm.data.osm.search.SearchCompiler;
-
-import org.openstreetmap.josm.data.osm.search.SearchSetting;
+import org.openstreetmap.josm.data.osm.Filter;
 import org.openstreetmap.josm.gui.MainApplication;
 import org.openstreetmap.josm.tools.Logging;
-import org.openstreetmap.josm.data.osm.Filter;
 import org.openstreetmap.josm.data.osm.FilterModel;
 import org.openstreetmap.josm.gui.dialogs.FilterDialog;
 import org.openstreetmap.josm.gui.dialogs.FilterTableModel;
 
 public class OHMDateFilterFunctions {
 
-    /**
-     * Applies a date filter based on a provided SearchSetting object.
-     *
-     * @param searchSetting The search settings including the date range.
-     */
-    public static void applyDateFilter(SearchSetting searchSetting, boolean saveFilter) {
+    public static void applyDateFilter(FilterList filterList, boolean saveFilter, boolean resetFilters) {
 
         DataSet currentDataSet = getCurrentDataSet();
         if (currentDataSet == null) {
@@ -27,23 +19,23 @@ public class OHMDateFilterFunctions {
         }
 
         try {
-            // Validate searchSetting
-            SearchCompiler.compile(searchSetting);
-            // Create filter
-            Filter filter = new Filter();
-            filter.text = searchSetting.text;
-            filter.caseSensitive = searchSetting.caseSensitive;
-            filter.regexSearch = searchSetting.regexSearch;
-            filter.mapCSSSearch = searchSetting.mapCSSSearch;
-            filter.allElements = searchSetting.allElements;
-            filter.inverted = true;
 
+            System.out.print("===================== \n");
+            System.out.print(filterList.toString());
             if (saveFilter) {
                 // Save filter in filer window
-                // Get filterDialog and apply filter
                 FilterDialog filterDialog = MainApplication.getMap().filterDialog;
                 FilterTableModel filterModel = filterDialog.getFilterModel();
-                filterModel.addFilter(filter);
+
+                for (FilterItem filterItem : filterList.getFilters()) {
+                    Filter filter = new Filter();
+                    if (filterItem.getActive()) {
+                        filter.text = filterItem.getText();
+                        filter.inverted = filterItem.getInverted();
+                        filterModel.addFilter(filter);
+                    }
+                }
+
                 filterModel.executeFilters();
                 // Update Filters
                 filterDialog.setVisible(true);
@@ -51,7 +43,26 @@ public class OHMDateFilterFunctions {
             } else {
                 // Just apply filter in the map
                 FilterModel filterModel = new FilterModel();
-                filterModel.addFilter(filter);
+
+                for (FilterItem filterItem : filterList.getFilters()) {
+                    Filter filter = new Filter();
+                    if (filterItem.getActive()) {
+                        filter.text = filterItem.getText();
+                        filter.inverted = filterItem.getInverted();
+                        filterModel.addFilter(filter);
+                    }
+                }
+
+                filterModel.executeFilters();
+            }
+
+            if (resetFilters) {
+                // Reset
+                FilterModel filterModel = new FilterModel();
+                Filter filter_reset = new Filter();
+                filter_reset.text = "";
+                filter_reset.inverted = true;
+                filterModel.addFilter(filter_reset);
                 filterModel.executeFilters();
             }
 
@@ -61,7 +72,6 @@ public class OHMDateFilterFunctions {
     }
 
     private static DataSet getCurrentDataSet() {
-        // Use MainApplication to get the current active dataset
         return MainApplication.getLayerManager().getEditDataSet();
     }
 
