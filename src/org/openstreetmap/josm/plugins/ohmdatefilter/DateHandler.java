@@ -18,6 +18,13 @@ public class DateHandler {
     public DateHandler() {
     }
 
+    public DateHandler(String startDateString, String endDateString) {
+        this.startDateString = startDateString;
+        this.startDate = LocalDate.parse(startDateString, formatter);
+        this.endDateString = endDateString;
+        this.endDate = LocalDate.parse(endDateString, formatter);
+    }
+
     public void setStartDateString(String startDateString) {
         this.startDateString = startDateString;
         this.startDate = LocalDate.parse(startDateString, formatter);
@@ -37,18 +44,16 @@ public class DateHandler {
         return this.endDate;
     }
 
-  
-
-  public int getRangeInDays() {
-    if (this.startDate != null && this.endDate != null) {
-        if (this.startDate.isBefore(this.endDate) || this.startDate.isEqual(this.endDate)) {
-            return (int) ChronoUnit.DAYS.between(this.startDate, this.endDate);
-        } else {
-            return -1;
+    public int getRangeInDays() {
+        if (this.startDate != null && this.endDate != null) {
+            if (this.startDate.isBefore(this.endDate) || this.startDate.isEqual(this.endDate)) {
+                return (int) ChronoUnit.DAYS.between(this.startDate, this.endDate);
+            } else {
+                return -1;
+            }
         }
+        return 0;
     }
-    return 0;
-}
 
     @Override
     public String toString() {
