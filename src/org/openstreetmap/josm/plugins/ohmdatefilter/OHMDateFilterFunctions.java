@@ -19,8 +19,6 @@ public class OHMDateFilterFunctions {
         }
 
         try {
-
-            System.out.print("===================== \n");
             System.out.print(filterList.toString());
             if (saveFilter) {
                 // Save filter in filer window
